@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { clearCache, pruneCache } from "../cache/cache.ts";
-import { LocalFsRegistry } from "../registry/localFs.ts";
+import { getRegistry } from "../registry/factory.ts";
 import { logger } from "../utils/logger.ts";
 
 export const registerCacheCommand = (program: Command): void => {
@@ -18,7 +18,7 @@ export const registerCacheCommand = (program: Command): void => {
     .command("prune")
     .description("Remove cached payloads that no longer exist in the registry")
     .action(async () => {
-      const registry = new LocalFsRegistry();
+      const registry = getRegistry();
       const { removed } = await pruneCache(registry);
       if (removed.length === 0) {
         logger.info("nothing to prune");

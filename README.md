@@ -114,6 +114,7 @@ Primary read command.
 
 Flags:
 
+
 | Flag                | Default   | Effect                                                 |
 | ------------------- | --------- | ------------------------------------------------------ |
 | `--version <range>` | `latest`  | Semver range/exact, fallback `$CTXBREW_<NAME>_VERSION` |
@@ -122,6 +123,7 @@ Flags:
 | `--no-cache`        | off       | Re-fetch payload                                       |
 | `--max-bytes <n>`   | unlimited | Output cap (`200k`, `5m`)                              |
 | `--grep <regex>`    | none      | Filter files by path regex                             |
+
 
 ### `ctxb cache clear [name]` / `ctxb cache prune`
 
@@ -134,13 +136,40 @@ Print completion script.
 ## Storage Layout
 
 - Registry: `~/.ctxbrew/registry/<name>/<version>/`
-    - `manifest.json`
-    - `payload.tar.gz`
+  - `manifest.json`
+  - `payload.tar.gz`
 - Cache: `~/.ctxbrew/cache/<name>/<version>/`
 
 Override root with `CTXBREW_HOME`.
 
+## Registry Backends
+
+Select the backend via `CTXBREW_REGISTRY`:
+
+- `local` (default): on-disk registry under `~/.ctxbrew/registry/`.
+- `github`: [GitHub Releases](https://docs.github.com/en/repos/releases) as the registry. Each `<name>@<version>` is a GitHub Release tagged `<name>-<version>` with `manifest.json` and `payload.tar.gz` as assets.
+
+Required env for `github`:
+
+| Variable                   | Required                | Purpose                                                |
+| -------------------------- | ----------------------- | ------------------------------------------------------ |
+| `CTXBREW_GITHUB_REPO`      | yes                     | `owner/repo` that stores the registry                  |
+| `CTXBREW_GITHUB_TOKEN`     | for publish / private   | Falls back to `GH_TOKEN`, then `GITHUB_TOKEN`          |
+| `CTXBREW_GITHUB_API_BASE`  | no                      | GitHub Enterprise API base (default `https://api.github.com`) |
+| `CTXBREW_GITHUB_UPLOAD_BASE` | no                    | GHE upload base (default `https://uploads.github.com`) |
+
+Example:
+
+```bash
+export CTXBREW_REGISTRY=github
+export CTXBREW_GITHUB_REPO=my-org/ctxbrew-registry
+export CTXBREW_GITHUB_TOKEN=ghp_xxx
+ctxb publish
+ctxb get my-library
+```
+
 ## Exit Codes
+
 
 | Code | Meaning                   |
 | ---- | ------------------------- |
@@ -150,6 +179,7 @@ Override root with `CTXBREW_HOME`.
 | 3    | Registry error            |
 | 4    | Package/section not found |
 | 5    | Integrity mismatch        |
+
 
 ## AI-Agent Usage Snippet
 
@@ -162,9 +192,9 @@ Use this workflow in your agent skill:
 
 ## Ecosystem Scope
 
-- [x] JS ecosystem (`package.json`, npm install flow)
-- [ ] Go ecosystem
-- [ ] Rust ecosystem
+- JS ecosystem (`package.json`, npm install flow)
+- Go ecosystem
+- Rust ecosystem
 
 ## Architecture (High Level)
 
@@ -180,3 +210,7 @@ ctxb publish --pack-->           <name>/<ver>/manifest.json
 ```
 
 `manifest.json` is separate from payload, so listing sections is fast and payload-free.
+
+## Contributing
+
+Releases are automated via `semantic-release` on every push to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for commit conventions and the release pipeline.

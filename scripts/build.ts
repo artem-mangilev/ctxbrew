@@ -30,7 +30,13 @@ const main = async (): Promise<void> => {
     process.exit(1);
   }
 
-  await rm(OUT_DIR, { recursive: true, force: true });
+  if (selected.length === TARGETS.length) {
+    await rm(OUT_DIR, { recursive: true, force: true });
+  } else {
+    for (const t of selected) {
+      await rm(join(OUT_DIR, t.outName), { force: true });
+    }
+  }
   await mkdir(OUT_DIR, { recursive: true });
 
   for (const t of selected) {

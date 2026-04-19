@@ -11,12 +11,8 @@ import {
   registryDir,
 } from "../utils/paths.ts";
 import type { RegistryClient } from "./client.ts";
-import {
-  MANIFEST_SCHEMA_VERSION,
-  type Manifest,
-  type PublishInput,
-  type RegistryEntry,
-} from "./types.ts";
+import { type Manifest, type PublishInput, type RegistryEntry } from "./types.ts";
+import { validateManifest } from "./validate.ts";
 
 const readJsonFile = async (path: string): Promise<unknown | null> => {
   const file = Bun.file(path);
@@ -130,30 +126,6 @@ export class LocalFsRegistry implements RegistryClient {
     return v.length > 0 ? v : null;
   }
 }
-
-const validateManifest = (raw: unknown, name: string, version: string): Manifest => {
-  if (typeof raw !== "object" || raw === null) {
-    throw registryError(`Manifest for ${name}@${version} is not an object`);
-  }
-  const m = raw as Manifest;
-  if (m.schemaVersion !== MANIFEST_SCHEMA_VERSION) {
-    throw registryError(
-      `Manifest schemaVersion ${m.schemaVersion} for ${name}@${version} is not supported (expected ${MANIFEST_SCHEMA_VERSION})`,
-    );
-  }
-  if (m.name !== name || m.version !== version) {
-    throw registryError(
-      `Manifest mismatch: file says ${m.name}@${m.version}, expected ${name}@${version}`,
-    );
-  }
-  if (!m.payload || typeof m.payload.sha256 !== "string" || typeof m.payload.bytes !== "number") {
-    throw registryError(`Manifest for ${name}@${version} has invalid payload metadata`);
-  }
-  if (!m.sections || typeof m.sections !== "object") {
-    throw registryError(`Manifest for ${name}@${version} has no sections`);
-  }
-  return m;
-};
 
 export const removePackageFromRegistry = async (name?: string): Promise<void> => {
   const target = name ? pkgRegistryDir(name) : registryDir();

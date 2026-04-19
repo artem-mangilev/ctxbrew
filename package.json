@@ -10,12 +10,7 @@
     "dev": "bun run ./src/bin/ctxb.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "build": "bun run scripts/build.ts",
-    "build:darwin-arm64": "BUN_NO_CODESIGN_MACHO_BINARY=1 bun build --compile --minify --target=bun-darwin-arm64 ./src/bin/ctxb.ts --outfile dist/ctxb-darwin-arm64 && codesign --force --sign - dist/ctxb-darwin-arm64",
-    "build:darwin-x64": "BUN_NO_CODESIGN_MACHO_BINARY=1 bun build --compile --minify --target=bun-darwin-x64 ./src/bin/ctxb.ts --outfile dist/ctxb-darwin-x64 && codesign --force --sign - dist/ctxb-darwin-x64",
-    "build:linux-x64": "bun build --compile --minify --target=bun-linux-x64 ./src/bin/ctxb.ts --outfile dist/ctxb-linux-x64",
-    "build:linux-arm64": "bun build --compile --minify --target=bun-linux-arm64 ./src/bin/ctxb.ts --outfile dist/ctxb-linux-arm64",
-    "build:windows-x64": "bun build --compile --minify --target=bun-windows-x64 ./src/bin/ctxb.ts --outfile dist/ctxb-windows-x64.exe"
+    "build": "bun run scripts/build.ts"
   },
   "engines": {
     "node": ">=18",
@@ -38,6 +33,9 @@
     "javascript"
   ],
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "commander": "^12.1.0",
     "picocolors": "^1.1.1",
@@ -45,8 +43,13 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.6",
+    "@semantic-release/npm": "^13.1.5",
     "@types/bun": "latest",
     "@types/semver": "^7.5.8",
+    "semantic-release": "^25.0.3",
     "typescript": "^5.6.3"
   }
 }

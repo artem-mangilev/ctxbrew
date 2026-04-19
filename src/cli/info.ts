@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { LocalFsRegistry } from "../registry/localFs.ts";
+import { getRegistry } from "../registry/factory.ts";
 import { colorize } from "../utils/logger.ts";
 
 type Options = {
@@ -8,7 +8,7 @@ type Options = {
 };
 
 export const runInfo = async (name: string, opts: Options): Promise<void> => {
-  const registry = new LocalFsRegistry();
+  const registry = getRegistry();
   const range = opts.version ?? "latest";
   const version = await registry.resolveVersion(name, range);
   const manifest = await registry.fetchManifest(name, version);

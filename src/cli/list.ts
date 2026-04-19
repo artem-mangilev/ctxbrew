@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { LocalFsRegistry } from "../registry/localFs.ts";
+import { getRegistry } from "../registry/factory.ts";
 import { colorize } from "../utils/logger.ts";
 
 type Options = {
@@ -7,7 +7,7 @@ type Options = {
 };
 
 export const runList = async (opts: Options): Promise<void> => {
-  const registry = new LocalFsRegistry();
+  const registry = getRegistry();
   const entries = await registry.list();
   if (opts.json) {
     process.stdout.write(`${JSON.stringify(entries, null, 2)}\n`);

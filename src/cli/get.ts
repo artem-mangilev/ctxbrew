@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { ensureCached, readSectionFiles } from "../cache/cache.ts";
-import { LocalFsRegistry } from "../registry/localFs.ts";
+import { getRegistry } from "../registry/factory.ts";
 import { render, type RenderFormat } from "../extract/render.ts";
 import { notFoundError, usageError } from "../utils/exit.ts";
 import { colorize } from "../utils/logger.ts";
@@ -48,7 +48,7 @@ export const runGet = async (
   section: string | undefined,
   opts: Options,
 ): Promise<void> => {
-  const registry = new LocalFsRegistry();
+  const registry = getRegistry();
   const range = opts.version ?? versionRangeFromEnv(name) ?? "latest";
   const version = await registry.resolveVersion(name, range);
   const manifest = await registry.fetchManifest(name, version);

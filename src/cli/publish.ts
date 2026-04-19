@@ -3,7 +3,7 @@ import semver from "semver";
 import { pack } from "../archive/archive.ts";
 import { loadConfig } from "../config/load.ts";
 import { collectFiles } from "../extract/collect.ts";
-import { LocalFsRegistry } from "../registry/localFs.ts";
+import { getRegistry } from "../registry/factory.ts";
 import { MANIFEST_SCHEMA_VERSION, type Manifest } from "../registry/types.ts";
 import { configError } from "../utils/exit.ts";
 import { colorize, logger } from "../utils/logger.ts";
@@ -101,7 +101,7 @@ export const runPublish = async (opts: Options): Promise<void> => {
     return;
   }
 
-  const registry = new LocalFsRegistry();
+  const registry = getRegistry();
   await registry.publish({ manifest, payload });
 
   logger.success(

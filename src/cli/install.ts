@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { ensureCached } from "../cache/cache.ts";
-import { LocalFsRegistry } from "../registry/localFs.ts";
+import { getRegistry } from "../registry/factory.ts";
 import { usageError } from "../utils/exit.ts";
 import { colorize, logger } from "../utils/logger.ts";
 
@@ -19,7 +19,7 @@ type Options = {
 
 export const runInstall = async (spec: string, opts: Options): Promise<void> => {
   const { name, range } = parseSpec(spec);
-  const registry = new LocalFsRegistry();
+  const registry = getRegistry();
   const version = await registry.resolveVersion(name, range);
   const manifest = await registry.fetchManifest(name, version);
   const dir = await ensureCached(registry, manifest, { noCache: opts.noCache });
