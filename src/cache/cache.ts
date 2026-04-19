@@ -9,10 +9,13 @@ import { cacheDir, pkgCacheDir } from "../utils/paths.ts";
 
 const READY_MARKER = ".ctxbrew-ready";
 
-const isReady = async (dir: string): Promise<boolean> => {
+const isReady = async (dir: string, expectedSha256: string): Promise<boolean> => {
   try {
-    const s = await stat(join(dir, READY_MARKER));
-    return s.isFile();
+    const markerPath = join(dir, READY_MARKER);
+    const s = await stat(markerPath);
+    if (!s.isFile()) return false;
+    const actual = (await Bun.file(markerPath).text()).trim();
+    return actual === expectedSha256;
   } catch {
     return false;
   }
@@ -33,7 +36,7 @@ export const ensureCached = async (
 ): Promise<string> => {
   const dir = pkgCacheDir(manifest.name, manifest.version);
 
-  if (!opts.noCache && (await isReady(dir))) {
+  if (!opts.noCache && (await isReady(dir, manifest.payload.sha256))) {
     logger.debug(`cache hit ${manifest.name}@${manifest.version}`);
     return dir;
   }

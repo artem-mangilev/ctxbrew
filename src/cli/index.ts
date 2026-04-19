@@ -15,7 +15,7 @@ export const buildProgram = (toolVersion: string): Command => {
   program
     .name("ctxb")
     .description(
-      "Pack library docs/source into versioned context bundles for AI agents. Language-agnostic.",
+      "Pack docs/source into versioned context bundles for AI agents.",
     )
     // enablePositionalOptions scopes --version to its position: `ctxb --version`
     // returns the tool version, `ctxb publish --version 1.0.0` is the publish flag.

@@ -1,6 +1,6 @@
 # ctxbrew
 
-`ctxbrew` packages library docs/source into versioned context bundles for AI agents.
+`ctxbrew` packages docs/source into versioned context bundles for AI agents.
 
 Install package `ctxbrew`, run command `ctxb`.
 
@@ -8,31 +8,20 @@ Install package `ctxbrew`, run command `ctxb`.
 ctxb get react components
 ```
 
-## What It Does
-
-- Reads `ctxbrew` config from a library repo.
-- Resolves glob sections at publish time.
-- Produces a manifest + compressed payload with SHA256 integrity.
-- Lets consumers read sections as markdown, JSON, or files-only.
-- Keeps stdout stable for piping into agents; logs go to stderr.
-
 ## Install
 
-### From source
+### From npm (prebuilt binary)
 
 ```bash
-git clone https://github.com/<org>/ctxbrew
-cd ctxbrew
-bun install
-bun run build:darwin-arm64
-./dist/ctxb-darwin-arm64 --version
+npm install -g ctxbrew
+ctxb --version
 ```
 
-### Run directly (Bun >= 1.3.6)
+`ctxbrew` npm package includes a platform-specific prebuilt `ctxb` binary for:
 
-```bash
-bun run ./src/bin/ctxb.ts --help
-```
+- macOS: arm64, x64
+- Linux: arm64, x64
+- Windows: x64
 
 ## Quick Start
 
@@ -40,15 +29,17 @@ bun run ./src/bin/ctxb.ts --help
 ctxb init
 ```
 
-This creates `ctxbrew.config.json`:
+This adds `ctxbrew` section to your `package.json`:
 
 ```json
 {
     "name": "my-library",
     "version": "0.1.0",
-    "cli": {
-        "docs": "./docs/**/*.md",
-        "api": ["./src/**/*.ts", "!**/*.test.ts"]
+    "ctxbrew": {
+        "cli": {
+            "docs": "./docs/**/*.md",
+            "api": ["./src/**/*.ts", "!**/*.test.ts"]
+        }
     }
 }
 ```
@@ -68,14 +59,13 @@ ctxb get my-library api --json
 ctxb get my-library docs --files-only
 ```
 
-## Config Discovery
+## Config Source
 
-Order:
+Config discovery order:
 
-1. `ctxbrew.config.json`
-2. `.ctxbrewrc.json`
-3. `.ctxbrewrc` (JSON content)
-4. `package.json#ctxbrew`
+1. `.ctxbrewrc.json`
+2. `.ctxbrewrc` (JSON content)
+3. `package.json#ctxbrew`
 
 Example:
 
@@ -83,17 +73,12 @@ Example:
 {
     "name": "react",
     "version": "19.0.0",
-    "cli": {
-        "components": "./docs/components/**",
-        "directives": "./docs/directives/**",
-        "api": ["./src/**/*.ts", "!**/*.test.ts"]
-    },
-    "limits": {
-        "maxBytes": 52428800,
-        "maxFiles": 5000
-    },
-    "extensions": {
-        ".astro": "astro"
+    "ctxbrew": {
+        "cli": {
+            "components": "./docs/components/**",
+            "directives": "./docs/directives/**",
+            "api": ["./src/**/*.ts", "!**/*.test.ts"]
+        }
     }
 }
 ```
@@ -102,7 +87,7 @@ Example:
 
 ### `ctxb init [--cwd DIR] [--force]`
 
-Create starter `ctxbrew.config.json`.
+Create/update starter `package.json#ctxbrew`.
 
 ### `ctxb publish [--version SEMVER] [--dry-run] [--cwd DIR]`
 
@@ -175,17 +160,11 @@ Use this workflow in your agent skill:
 3. Use `--json` if structured parsing is needed.
 4. Treat non-zero exit codes as failures (`4` means missing package/section).
 
-## Cross-language Support
+## Ecosystem Scope
 
-`ctxb` is a standalone binary and can be used from JS/TS, Go, Rust, Python, etc.
-
-Auto-detection priority for missing `name`/`version`:
-
-1. `package.json`
-2. `Cargo.toml`
-3. `go.mod` (module tail segment for `name`)
-
-Otherwise set `name` and `version` explicitly in `ctxbrew.config.json`.
+- [x] JS ecosystem (`package.json`, npm install flow)
+- [ ] Go ecosystem
+- [ ] Rust ecosystem
 
 ## Architecture (High Level)
 
@@ -201,33 +180,3 @@ ctxb publish --pack-->           <name>/<ver>/manifest.json
 ```
 
 `manifest.json` is separate from payload, so listing sections is fast and payload-free.
-
-## Project Layout
-
-```text
-src/
-  bin/ctxb.ts
-  cli/
-  config/
-  extract/
-  archive/
-  registry/
-  cache/
-  utils/
-scripts/build.ts
-tests/
-```
-
-## Development
-
-```bash
-bun install
-bun test
-bun run typecheck
-bun run dev -- get demo
-bun run build:darwin-arm64
-```
-
-## License
-
-MIT

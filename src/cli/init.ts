@@ -4,8 +4,6 @@ import { configError } from "../utils/exit.ts";
 import { logger } from "../utils/logger.ts";
 
 const TEMPLATE = {
-  name: "my-library",
-  version: "0.1.0",
   cli: {
     docs: "./docs/**/*.md",
     api: ["./src/**/*.ts", "!**/*.test.ts"],
@@ -19,25 +17,44 @@ type Options = {
 
 export const runInit = async (opts: Options): Promise<void> => {
   const cwd = opts.cwd ?? process.cwd();
-  const target = join(cwd, "ctxbrew.config.json");
+  const target = join(cwd, "package.json");
   const file = Bun.file(target);
-  if ((await file.exists()) && !opts.force) {
+  if (!(await file.exists())) {
     throw configError(
-      `ctxbrew.config.json already exists at ${target}`,
-      "Pass --force to overwrite.",
+      `package.json not found at ${target}`,
+      "Run `npm init -y` first, then run `ctxb init`.",
     );
   }
-  await Bun.write(target, `${JSON.stringify(TEMPLATE, null, 2)}\n`);
-  logger.success(`wrote ${target}`);
-  logger.info("Edit `name`, `version`, and `cli` sections, then run `ctxb publish`.");
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = await file.json();
+  } catch (e) {
+    throw configError(
+      `Invalid JSON in ${target}: ${(e as Error).message}`,
+      "Fix package.json and retry.",
+    );
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw configError(`package.json at ${target} must be a JSON object`);
+  }
+  if ("ctxbrew" in parsed && !opts.force) {
+    throw configError(
+      `package.json already has a ctxbrew field at ${target}`,
+      "Pass --force to overwrite package.json#ctxbrew.",
+    );
+  }
+  const next = { ...parsed, ctxbrew: TEMPLATE };
+  await Bun.write(target, `${JSON.stringify(next, null, 2)}\n`);
+  logger.success(`updated ${target} with package.json#ctxbrew`);
+  logger.info("Edit `ctxbrew.cli` patterns, then run `ctxb publish`.");
 };
 
 export const registerInitCommand = (program: Command): void => {
   program
     .command("init")
-    .description("Create a starter ctxbrew.config.json in the current directory")
+    .description("Create/update a starter package.json#ctxbrew in the current directory")
     .option("--cwd <dir>", "directory to write into (defaults to current directory)")
-    .option("--force", "overwrite existing ctxbrew.config.json")
+    .option("--force", "overwrite existing package.json#ctxbrew")
     .action(async (opts: Options) => {
       await runInit(opts);
     });

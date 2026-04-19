@@ -5,33 +5,48 @@ import { CtxbrewError } from "../src/utils/exit.ts";
 import { withTmpDir, writeFiles } from "./helpers.ts";
 
 describe("config loader", () => {
-  test("loads ctxbrew.config.json with explicit name/version", async () => {
+  test("loads .ctxbrewrc.json", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
-        "ctxbrew.config.json": JSON.stringify({
+        "package.json": JSON.stringify({ name: "demo", version: "1.2.3" }),
+        ".ctxbrewrc.json": JSON.stringify({ cli: { docs: "./docs/**" } }),
+      });
+      const { config, configPath } = await loadConfig(dir);
+      expect(config.name).toBe("demo");
+      expect(config.version).toBe("1.2.3");
+      expect(config.cli.docs).toEqual(["./docs/**"]);
+      expect(configPath).toBe(join(dir, ".ctxbrewrc.json"));
+    });
+  });
+
+  test("loads .ctxbrewrc (json content)", async () => {
+    await withTmpDir(async (dir) => {
+      await writeFiles(dir, {
+        "package.json": JSON.stringify({ name: "demo", version: "1.2.3" }),
+        ".ctxbrewrc": JSON.stringify({ cli: { docs: "./docs/**" } }),
+      });
+      const { config, configPath } = await loadConfig(dir);
+      expect(config.name).toBe("demo");
+      expect(config.version).toBe("1.2.3");
+      expect(config.cli.docs).toEqual(["./docs/**"]);
+      expect(configPath).toBe(join(dir, ".ctxbrewrc"));
+    });
+  });
+
+  test("loads package.json#ctxbrew", async () => {
+    await withTmpDir(async (dir) => {
+      await writeFiles(dir, {
+        "package.json": JSON.stringify({
           name: "demo",
           version: "1.2.3",
-          cli: { docs: "./docs/**" },
+          ctxbrew: { cli: { docs: "./docs/**" } },
         }),
       });
       const { config, configPath } = await loadConfig(dir);
       expect(config.name).toBe("demo");
       expect(config.version).toBe("1.2.3");
       expect(config.cli.docs).toEqual(["./docs/**"]);
-      expect(configPath).toBe(join(dir, "ctxbrew.config.json"));
-      expect(config.limits.maxBytes).toBeGreaterThan(0);
-    });
-  });
-
-  test("falls back to package.json for name/version", async () => {
-    await withTmpDir(async (dir) => {
-      await writeFiles(dir, {
-        "package.json": JSON.stringify({ name: "from-pkg", version: "9.9.9" }),
-        "ctxbrew.config.json": JSON.stringify({ cli: { api: "./src/**" } }),
-      });
-      const { config } = await loadConfig(dir);
-      expect(config.name).toBe("from-pkg");
-      expect(config.version).toBe("9.9.9");
+      expect(configPath).toBe(`${join(dir, "package.json")}#ctxbrew`);
     });
   });
 
@@ -54,10 +69,10 @@ describe("config loader", () => {
   test("rejects invalid section name", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
-        "ctxbrew.config.json": JSON.stringify({
+        "package.json": JSON.stringify({
           name: "x",
           version: "1.0.0",
-          cli: { "Bad Section": "./**" },
+          ctxbrew: { cli: { "Bad Section": "./**" } },
         }),
       });
       await expect(loadConfig(dir)).rejects.toBeInstanceOf(CtxbrewError);
@@ -67,7 +82,11 @@ describe("config loader", () => {
   test("rejects empty cli", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
-        "ctxbrew.config.json": JSON.stringify({ name: "x", version: "1.0.0", cli: {} }),
+        "package.json": JSON.stringify({
+          name: "x",
+          version: "1.0.0",
+          ctxbrew: { cli: {} },
+        }),
       });
       await expect(loadConfig(dir)).rejects.toBeInstanceOf(CtxbrewError);
     });
@@ -76,39 +95,41 @@ describe("config loader", () => {
   test("rejects invalid package name", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
-        "ctxbrew.config.json": JSON.stringify({
+        "package.json": JSON.stringify({
           name: "Bad Name",
           version: "1.0.0",
-          cli: { x: "./**" },
+          ctxbrew: { cli: { x: "./**" } },
         }),
       });
       await expect(loadConfig(dir)).rejects.toBeInstanceOf(CtxbrewError);
     });
   });
 
-  test("autodetects from Cargo.toml", async () => {
+  test("rejects deprecated keys in package.json#ctxbrew", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
-        "Cargo.toml": '[package]\nname = "rust-lib"\nversion = "0.5.0"\n',
-        "ctxbrew.config.json": JSON.stringify({ cli: { docs: "./**" } }),
+        "package.json": JSON.stringify({
+          name: "demo",
+          version: "1.0.0",
+          ctxbrew: {
+            cli: { docs: "./docs/**" },
+            limits: { maxBytes: 123 },
+          },
+        }),
       });
-      const { config } = await loadConfig(dir);
-      expect(config.name).toBe("rust-lib");
-      expect(config.version).toBe("0.5.0");
+      await expect(loadConfig(dir)).rejects.toBeInstanceOf(CtxbrewError);
     });
   });
 
-  test("autodetects from go.mod", async () => {
+  test("requires at least one supported config source", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
-        "go.mod": "module github.com/example/widget\n\ngo 1.21\n",
-        "ctxbrew.config.json": JSON.stringify({
+        "package.json": JSON.stringify({
+          name: "demo",
           version: "1.0.0",
-          cli: { pkg: "./**" },
         }),
       });
-      const { config } = await loadConfig(dir);
-      expect(config.name).toBe("widget");
+      await expect(loadConfig(dir)).rejects.toBeInstanceOf(CtxbrewError);
     });
   });
 

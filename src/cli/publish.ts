@@ -14,6 +14,11 @@ type Options = {
   cwd?: string;
 };
 
+const INTERNAL_LIMITS = {
+  maxBytes: 50 * 1024 * 1024,
+  maxFiles: 5000,
+};
+
 const enforceLimits = (
   bytesByFile: Map<string, number>,
   caps: { maxBytes: number; maxFiles: number },
@@ -21,7 +26,7 @@ const enforceLimits = (
   if (bytesByFile.size > caps.maxFiles) {
     throw configError(
       `Publish exceeds maxFiles cap (${bytesByFile.size} > ${caps.maxFiles})`,
-      "Tighten globs or raise `limits.maxFiles` in ctxbrew.config.json.",
+      "Tighten your ctxbrew.cli globs to publish fewer files.",
     );
   }
   let total = 0;
@@ -29,7 +34,7 @@ const enforceLimits = (
   if (total > caps.maxBytes) {
     throw configError(
       `Publish exceeds maxBytes cap (${total} > ${caps.maxBytes})`,
-      "Tighten globs or raise `limits.maxBytes` in ctxbrew.config.json.",
+      "Tighten your ctxbrew.cli globs to reduce publish size.",
     );
   }
 };
@@ -67,7 +72,7 @@ export const runPublish = async (opts: Options): Promise<void> => {
     }
   }
 
-  enforceLimits(bytesByFile, config.limits);
+  enforceLimits(bytesByFile, INTERNAL_LIMITS);
 
   const sortedFiles = [...allFiles.entries()]
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))

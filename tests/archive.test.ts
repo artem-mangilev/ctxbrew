@@ -32,6 +32,13 @@ describe("archive", () => {
     });
   });
 
+  test("rejects unsafe archive paths", async () => {
+    const { bytes, sha256 } = await pack({ files: [{ path: "../escape.txt", content: "oops" }] });
+    await withTmpDir(async (dir) => {
+      await expect(verifyAndExtract(bytes, sha256, dir)).rejects.toBeInstanceOf(CtxbrewError);
+    });
+  });
+
   test("sha256Hex is stable", () => {
     const data = new TextEncoder().encode("hello");
     expect(sha256Hex(data)).toBe(

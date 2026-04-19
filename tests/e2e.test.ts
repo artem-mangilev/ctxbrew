@@ -5,7 +5,6 @@ import { runInfo } from "../src/cli/info.ts";
 import { runList } from "../src/cli/list.ts";
 import { runPublish } from "../src/cli/publish.ts";
 import { LocalFsRegistry } from "../src/registry/localFs.ts";
-import { CtxbrewError } from "../src/utils/exit.ts";
 import { withTmpCtxbrewHome, withTmpDir, writeFiles } from "./helpers.ts";
 
 const captureStdout = async (fn: () => Promise<void>): Promise<string> => {
@@ -25,12 +24,14 @@ const captureStdout = async (fn: () => Promise<void>): Promise<string> => {
 
 const seedProject = async (root: string): Promise<void> => {
   await writeFiles(root, {
-    "ctxbrew.config.json": JSON.stringify({
+    "package.json": JSON.stringify({
       name: "demo",
       version: "1.0.0",
-      cli: {
-        components: "./docs/components/**",
-        api: "./src/**/*.ts",
+      ctxbrew: {
+        cli: {
+          components: "./docs/components/**",
+          api: "./src/**/*.ts",
+        },
       },
     }),
     "docs/components/Button.md": "# Button\nUse it.",
@@ -104,6 +105,24 @@ describe("e2e: publish -> get", () => {
     });
   });
 
+  test("cache is invalidated if ready marker sha mismatches manifest", async () => {
+    await withTmpCtxbrewHome(async (home) => {
+      await withTmpDir(async (proj) => {
+        await seedProject(proj);
+        await runPublish({ cwd: proj });
+        await runGet("demo", "components", {});
+
+        const markerPath = join(home, "cache", "demo", "1.0.0", ".ctxbrew-ready");
+        await Bun.write(markerPath, "0".repeat(64));
+
+        await expect(runGet("demo", "components", {})).resolves.toBeUndefined();
+        const marker = (await Bun.file(markerPath).text()).trim();
+        expect(marker).toMatch(/^[0-9a-f]{64}$/);
+        expect(marker).not.toBe("0".repeat(64));
+      });
+    });
+  });
+
   test("publish --dry-run writes nothing", async () => {
     await withTmpCtxbrewHome(async () => {
       await withTmpDir(async (proj) => {
@@ -151,39 +170,3 @@ describe("e2e: publish -> get", () => {
   });
 });
 
-describe("e2e: publish safety caps", () => {
-  test("rejects payload exceeding maxBytes", async () => {
-    await withTmpCtxbrewHome(async () => {
-      await withTmpDir(async (proj) => {
-        await writeFiles(proj, {
-          "ctxbrew.config.json": JSON.stringify({
-            name: "big",
-            version: "1.0.0",
-            cli: { all: "./**" },
-            limits: { maxBytes: 100, maxFiles: 1000 },
-          }),
-          "data.txt": "x".repeat(500),
-        });
-        await expect(runPublish({ cwd: proj })).rejects.toBeInstanceOf(CtxbrewError);
-      });
-    });
-  });
-
-  test("rejects exceeding maxFiles", async () => {
-    await withTmpCtxbrewHome(async () => {
-      await withTmpDir(async (proj) => {
-        const files: Record<string, string> = {
-          "ctxbrew.config.json": JSON.stringify({
-            name: "many",
-            version: "1.0.0",
-            cli: { all: "./files/**" },
-            limits: { maxFiles: 3 },
-          }),
-        };
-        for (let i = 0; i < 10; i++) files[`files/f${i}.txt`] = String(i);
-        await writeFiles(proj, files);
-        await expect(runPublish({ cwd: proj })).rejects.toBeInstanceOf(CtxbrewError);
-      });
-    });
-  });
-});

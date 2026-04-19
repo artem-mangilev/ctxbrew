@@ -3,11 +3,10 @@ import semver from "semver";
 import { configError } from "../utils/exit.ts";
 import { autodetectMeta } from "./autodetect.ts";
 import {
-  DEFAULT_LIMITS,
-  PACKAGE_NAME_RE,
   CtxbrewConfigSchema,
   type ResolvedConfig,
   type CtxbrewConfig,
+  PACKAGE_NAME_RE,
 } from "./schema.ts";
 
 export type LoadedConfig = {
@@ -16,7 +15,7 @@ export type LoadedConfig = {
   rootDir: string;
 };
 
-const CANDIDATES = ["ctxbrew.config.json", ".ctxbrewrc.json", ".ctxbrewrc"] as const;
+const CANDIDATES = [".ctxbrewrc.json", ".ctxbrewrc"] as const;
 
 const readJson = async (path: string): Promise<unknown | null> => {
   const file = Bun.file(path);
@@ -28,7 +27,7 @@ const readJson = async (path: string): Promise<unknown | null> => {
   } catch (e) {
     throw configError(
       `Invalid JSON in ${path}: ${(e as Error).message}`,
-      "ctxbrew currently supports JSON config only (ctxbrew.config.json, .ctxbrewrc[.json], or `ctxbrew` in package.json).",
+      "ctxbrew config supports .ctxbrewrc.json, .ctxbrewrc (JSON), or package.json#ctxbrew.",
     );
   }
 };
@@ -41,7 +40,7 @@ const findConfigSource = async (root: string): Promise<ConfigSource | null> => {
     const raw = await readJson(path);
     if (raw !== null) return { raw, path };
   }
-  // package.json#ctxbrew
+
   const pkgPath = join(root, "package.json");
   const pkg = await readJson(pkgPath);
   if (pkg && typeof pkg === "object" && "ctxbrew" in (pkg as Record<string, unknown>)) {
@@ -70,7 +69,7 @@ export const loadConfig = async (
   if (!source) {
     throw configError(
       `No ctxbrew config found in ${cwd}`,
-      "Run `ctxb init` to create a starter ctxbrew.config.json.",
+      "Create .ctxbrewrc.json/.ctxbrewrc (JSON) or run `ctxb init` to add package.json#ctxbrew.",
     );
   }
   const parsed = CtxbrewConfigSchema.safeParse(source.raw);
@@ -80,32 +79,28 @@ export const loadConfig = async (
       .join("\n");
     throw configError(`Invalid ctxbrew config at ${source.path}:\n${issues}`);
   }
-  const cfg = parsed.data;
+  const cfg: CtxbrewConfig = parsed.data;
 
-  let name = cfg.name;
-  let version = opts.versionOverride ?? cfg.version;
-  if (!name || !version) {
-    const detected = await autodetectMeta(cwd);
-    name ??= detected.name;
-    version ??= detected.version;
-  }
+  const detected = await autodetectMeta(cwd);
+  const name = detected.name;
+  const version = opts.versionOverride ?? detected.version;
 
   if (!name) {
     throw configError(
       "Could not determine package `name`",
-      "Set `name` in ctxbrew.config.json, or add a name to package.json/Cargo.toml/go.mod.",
+      "Set package.json `name`.",
     );
   }
   if (!PACKAGE_NAME_RE.test(name)) {
     throw configError(
       `Resolved package name "${name}" does not match ${PACKAGE_NAME_RE}`,
-      "Set an explicit `name` in ctxbrew.config.json that matches the pattern.",
+      "Set package.json `name` to a value that matches the pattern.",
     );
   }
   if (!version) {
     throw configError(
       "Could not determine package `version`",
-      "Set `version` in ctxbrew.config.json, or in your language manifest (package.json/Cargo.toml).",
+      "Set package.json `version`.",
     );
   }
   const cleanVersion = semver.valid(semver.coerce(version) ?? version);
@@ -116,17 +111,10 @@ export const loadConfig = async (
     );
   }
 
-  const limits = {
-    maxBytes: cfg.limits?.maxBytes ?? DEFAULT_LIMITS.maxBytes,
-    maxFiles: cfg.limits?.maxFiles ?? DEFAULT_LIMITS.maxFiles,
-  };
-
   const resolved: ResolvedConfig = {
     name,
     version: cleanVersion,
     cli: normalizePatterns(cfg.cli),
-    limits,
-    extensions: cfg.extensions ?? {},
   };
 
   return { config: resolved, configPath: source.path, rootDir: cwd };

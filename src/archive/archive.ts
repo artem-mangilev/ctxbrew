@@ -1,6 +1,6 @@
-import { dirname, join } from "node:path";
+import { dirname, join, normalize, sep } from "node:path";
 import { mkdir } from "node:fs/promises";
-import { integrityError } from "../utils/exit.ts";
+import { integrityError, registryError } from "../utils/exit.ts";
 
 export type PackInput = {
   files: Array<{ path: string; content: string | Uint8Array }>;
@@ -42,10 +42,29 @@ export const verifyAndExtract = async (
   const files = await archive.files();
   const written: string[] = [];
   for (const [relPath, file] of files) {
-    const out = join(destDir, relPath);
+    const normalized = normalize(relPath).replaceAll("\\", "/");
+    if (
+      normalized === ".." ||
+      normalized.startsWith("../") ||
+      normalized.includes("/../") ||
+      normalized.endsWith("/..") ||
+      normalized.startsWith("/")
+    ) {
+      throw registryError(
+        `Archive contains unsafe path "${relPath}"`,
+        "Payload rejected during extract.",
+      );
+    }
+    if (normalized.split("/").some((segment) => segment.length === 0 || segment === ".")) {
+      throw registryError(
+        `Archive contains invalid path "${relPath}"`,
+        "Payload rejected during extract.",
+      );
+    }
+    const out = join(destDir, normalized.replaceAll("/", sep));
     await mkdir(dirname(out), { recursive: true });
     await Bun.write(out, file);
-    written.push(relPath);
+    written.push(normalized);
   }
   return { files: written.sort() };
 };

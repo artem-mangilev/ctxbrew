@@ -1,10 +1,10 @@
 {
   "name": "ctxbrew",
   "version": "0.1.0",
-  "description": "Pack library docs/source into versioned context bundles for AI agents. Language-agnostic.",
+  "description": "CLI for packaging docs/source into versioned context bundles for AI agents.",
   "type": "module",
   "bin": {
-    "ctxb": "./src/bin/ctxb.ts"
+    "ctxb": "./bin/ctxb.js"
   },
   "scripts": {
     "dev": "bun run ./src/bin/ctxb.ts",
@@ -18,9 +18,12 @@
     "build:windows-x64": "bun build --compile --minify --target=bun-windows-x64 ./src/bin/ctxb.ts --outfile dist/ctxb-windows-x64.exe"
   },
   "engines": {
+    "node": ">=18",
     "bun": ">=1.3.6"
   },
   "files": [
+    "bin",
+    "dist",
     "src",
     "README.md",
     "LICENSE"
@@ -31,7 +34,8 @@
     "agent",
     "documentation",
     "context",
-    "bun"
+    "bun",
+    "javascript"
   ],
   "license": "MIT",
   "dependencies": {
