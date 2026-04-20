@@ -9,20 +9,5 @@ export type Manifest = {
   name: string;
   version: string;
   publishedAt: string;
-  payload: {
-    sha256: string;
-    bytes: number;
-  };
   sections: Record<string, ManifestSection>;
-};
-
-export type RegistryEntry = {
-  name: string;
-  versions: string[];
-  latest: string | null;
-};
-
-export type PublishInput = {
-  manifest: Manifest;
-  payload: Uint8Array;
 };

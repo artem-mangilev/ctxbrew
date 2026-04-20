@@ -1,11 +1,7 @@
 import { Command } from "commander";
-import { registerCacheCommand } from "./cache.ts";
 import { registerCompletionCommand } from "./completion.ts";
 import { registerGetCommand } from "./get.ts";
-import { registerInfoCommand } from "./info.ts";
 import { registerInitCommand } from "./init.ts";
-import { registerInstallCommand } from "./install.ts";
-import { registerListCommand } from "./list.ts";
 import { registerPublishCommand } from "./publish.ts";
 import { CtxbrewError, ExitCode } from "../utils/exit.ts";
 import { logger } from "../utils/logger.ts";
@@ -28,10 +24,6 @@ export const buildProgram = (toolVersion: string): Command => {
 
   registerInitCommand(program);
   registerPublishCommand(program);
-  registerInstallCommand(program);
-  registerListCommand(program);
-  registerInfoCommand(program);
-  registerCacheCommand(program);
   registerGetCommand(program);
   registerCompletionCommand(program);
 

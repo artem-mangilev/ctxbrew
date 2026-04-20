@@ -29,33 +29,37 @@ ctxb --version
 ctxb init
 ```
 
-This adds `ctxbrew` section to your `package.json`:
+This adds `ctxbrew` config and npm publish wiring in `package.json`:
 
 ```json
 {
-    "name": "my-library",
-    "version": "0.1.0",
-    "ctxbrew": {
-        "cli": {
-            "docs": "./docs/**/*.md",
-            "api": ["./src/**/*.ts", "!**/*.test.ts"]
-        }
+  "name": "my-library",
+  "version": "0.1.0",
+  "files": ["dist", ".ctxbrew"],
+  "scripts": {
+    "prepack": "ctxb publish"
+  },
+  "ctxbrew": {
+    "cli": {
+      "docs": "./docs/**/*.md",
+      "api": ["./src/**/*.ts", "!**/*.test.ts"]
     }
+  }
 }
 ```
 
-Publish:
+Build ctxbrew artifacts (also runs automatically during `npm publish` via `prepack`):
 
 ```bash
 ctxb publish
 ```
 
-Read:
+Install the package and read sections from installed `node_modules`:
 
 ```bash
 ctxb get my-library
 ctxb get my-library docs
-ctxb get my-library api --json
+ctxb get my-library api --json 
 ctxb get my-library docs --files-only
 ```
 
@@ -71,15 +75,15 @@ Example:
 
 ```json
 {
-    "name": "react",
-    "version": "19.0.0",
-    "ctxbrew": {
-        "cli": {
-            "components": "./docs/components/**",
-            "directives": "./docs/directives/**",
-            "api": ["./src/**/*.ts", "!**/*.test.ts"]
-        }
+  "name": "react",
+  "version": "19.0.0",
+  "ctxbrew": {
+    "cli": {
+      "components": "./docs/components/**",
+      "directives": "./docs/directives/**",
+      "api": ["./src/**/*.ts", "!**/*.test.ts"]
     }
+  }
 }
 ```
 
@@ -87,47 +91,28 @@ Example:
 
 ### `ctxb init [--cwd DIR] [--force]`
 
-Create/update starter `package.json#ctxbrew`.
+Create/update starter `package.json#ctxbrew`, ensure `.ctxbrew` is in package `files`, set `scripts.prepack` to run `ctxb publish`, and add `.ctxbrew/` to `.gitignore`.
 
 ### `ctxb publish [--version SEMVER] [--dry-run] [--cwd DIR]`
 
-Pack and publish to registry.
-
-### `ctxb install <name>[@<range>] [--no-cache]`
-
-Pre-fetch package into local cache.
-
-### `ctxb list [--json]`
-
-List packages in local registry.
-
-### `ctxb info <name> [--version <range>] [--json]`
-
-Show manifest metadata.
+Collect files from `ctxbrew.cli` and write package artifacts into `.ctxbrew/` in the project root.
 
 ### `ctxb get <name> [section]`
 
 Primary read command.
 
-- Without `section`: list sections from manifest (no payload fetch).
+- Without `section`: list sections from `.ctxbrew/manifest.json`.
 - With `section`: stream section output.
+- Package resolution uses `require.resolve("<name>/package.json")` from current working directory and then reads `<packageDir>/.ctxbrew`.
 
 Flags:
 
-
 | Flag                | Default   | Effect                                                 |
 | ------------------- | --------- | ------------------------------------------------------ |
-| `--version <range>` | `latest`  | Semver range/exact, fallback `$CTXBREW_<NAME>_VERSION` |
 | `--json`            | off       | Structured JSON output                                 |
 | `--files-only`      | off       | Only file paths                                        |
-| `--no-cache`        | off       | Re-fetch payload                                       |
 | `--max-bytes <n>`   | unlimited | Output cap (`200k`, `5m`)                              |
 | `--grep <regex>`    | none      | Filter files by path regex                             |
-
-
-### `ctxb cache clear [name]` / `ctxb cache prune`
-
-Clear or prune local cache.
 
 ### `ctxb completion <bash|zsh|fish>`
 
@@ -135,51 +120,27 @@ Print completion script.
 
 ## Storage Layout
 
-- Registry: `~/.ctxbrew/registry/<name>/<version>/`
-  - `manifest.json`
-  - `payload.tar.gz`
-- Cache: `~/.ctxbrew/cache/<name>/<version>/`
+- Publisher output inside your package root:
+  - `.ctxbrew/manifest.json`
+  - `.ctxbrew/files/<relative-source-path>`
+- Installed package layout in consumer project:
+  - `node_modules/<name>/.ctxbrew/manifest.json`
+  - `node_modules/<name>/.ctxbrew/files/<relative-source-path>`
 
-Override root with `CTXBREW_HOME`.
+## npm publish integration
 
-## Registry Backends
-
-Select the backend via `CTXBREW_REGISTRY`:
-
-- `local` (default): on-disk registry under `~/.ctxbrew/registry/`.
-- `github`: [GitHub Releases](https://docs.github.com/en/repos/releases) as the registry. Each `<name>@<version>` is a GitHub Release tagged `<name>-<version>` with `manifest.json` and `payload.tar.gz` as assets.
-
-Required env for `github`:
-
-| Variable                   | Required                | Purpose                                                |
-| -------------------------- | ----------------------- | ------------------------------------------------------ |
-| `CTXBREW_GITHUB_REPO`      | yes                     | `owner/repo` that stores the registry                  |
-| `CTXBREW_GITHUB_TOKEN`     | for publish / private   | Falls back to `GH_TOKEN`, then `GITHUB_TOKEN`          |
-| `CTXBREW_GITHUB_API_BASE`  | no                      | GitHub Enterprise API base (default `https://api.github.com`) |
-| `CTXBREW_GITHUB_UPLOAD_BASE` | no                    | GHE upload base (default `https://uploads.github.com`) |
-
-Example:
-
-```bash
-export CTXBREW_REGISTRY=github
-export CTXBREW_GITHUB_REPO=my-org/ctxbrew-registry
-export CTXBREW_GITHUB_TOKEN=ghp_xxx
-ctxb publish
-ctxb get my-library
-```
+- `ctxb publish` prepares `.ctxbrew` locally.
+- npm includes `.ctxbrew` in the package tarball via `package.json#files`.
+- `prepack` runs before `npm pack` and `npm publish`, so `ctxb publish` regenerates artifacts automatically.
 
 ## Exit Codes
 
-
-| Code | Meaning                   |
-| ---- | ------------------------- |
-| 0    | Success                   |
-| 1    | Usage error               |
-| 2    | Config validation error   |
-| 3    | Registry error            |
-| 4    | Package/section not found |
-| 5    | Integrity mismatch        |
-
+- `0`: success
+- `1`: usage error
+- `2`: config validation error
+- `3`: package metadata/read error
+- `4`: package/section/file not found
+- `5`: reserved
 
 ## AI-Agent Usage Snippet
 
@@ -199,17 +160,16 @@ Use this workflow in your agent skill:
 ## Architecture (High Level)
 
 ```text
-publisher                        registry                       consumer
----------                        --------                       --------
-ctxb publish --pack-->           <name>/<ver>/manifest.json
-                                 <name>/<ver>/payload.tar.gz
-                                                               |
-                                 <-- fetchManifest ----------  ctxb get <name> [section]
-                                 -- fetchPayload ----------->  verify sha256 -> extract ~/.ctxbrew/cache
-                                                               -> render markdown/json/files-only -> stdout
+publisher project                    npm                              consumer project
+-----------------                    ---                              ----------------
+ctxb publish -------------------->   npm publish / npm install ----> node_modules/<name>/.ctxbrew/...
+  writes .ctxbrew/manifest.json                                        |
+  writes .ctxbrew/files/*                                              v
+                                                           ctxb get <name> [section]
+                                                           resolve installed package
+                                                           read .ctxbrew manifest/files
+                                                           render markdown/json/files-only -> stdout
 ```
-
-`manifest.json` is separate from payload, so listing sections is fast and payload-free.
 
 ## Contributing
 

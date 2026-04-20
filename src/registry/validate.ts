@@ -16,11 +16,17 @@ export const validateManifest = (raw: unknown, name: string, version: string): M
       `Manifest mismatch: file says ${m.name}@${m.version}, expected ${name}@${version}`,
     );
   }
-  if (!m.payload || typeof m.payload.sha256 !== "string" || typeof m.payload.bytes !== "number") {
-    throw registryError(`Manifest for ${name}@${version} has invalid payload metadata`);
-  }
   if (!m.sections || typeof m.sections !== "object") {
     throw registryError(`Manifest for ${name}@${version} has no sections`);
+  }
+  for (const [sectionName, sectionValue] of Object.entries(m.sections)) {
+    if (typeof sectionValue !== "object" || sectionValue === null || !("files" in sectionValue)) {
+      throw registryError(`Manifest section "${sectionName}" is invalid`);
+    }
+    const files = (sectionValue as { files?: unknown }).files;
+    if (!Array.isArray(files) || files.some((f) => typeof f !== "string")) {
+      throw registryError(`Manifest section "${sectionName}" has invalid files list`);
+    }
   }
   return m;
 };

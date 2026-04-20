@@ -1,15 +1,12 @@
 import { Command } from "commander";
-import { ensureCached, readSectionFiles } from "../cache/cache.ts";
-import { getRegistry } from "../registry/factory.ts";
 import { render, type RenderFormat } from "../extract/render.ts";
+import { readManifest, readSectionFile } from "../registry/nodeModules.ts";
 import { notFoundError, usageError } from "../utils/exit.ts";
 import { colorize } from "../utils/logger.ts";
 
 type Options = {
-  version?: string;
   json?: boolean;
   filesOnly?: boolean;
-  noCache?: boolean;
   maxBytes?: string;
   grep?: string;
 };
@@ -38,20 +35,13 @@ const parseMaxBytes = (raw: string | undefined): number | undefined => {
   return n * mult;
 };
 
-const versionRangeFromEnv = (name: string): string | undefined => {
-  const key = `CTXBREW_${name.toUpperCase().replace(/[^A-Z0-9]+/g, "_")}_VERSION`;
-  return process.env[key];
-};
-
 export const runGet = async (
   name: string,
   section: string | undefined,
   opts: Options,
 ): Promise<void> => {
-  const registry = getRegistry();
-  const range = opts.version ?? versionRangeFromEnv(name) ?? "latest";
-  const version = await registry.resolveVersion(name, range);
-  const manifest = await registry.fetchManifest(name, version);
+  const cwd = process.cwd();
+  const manifest = await readManifest(name, cwd);
 
   if (!section) {
     const sections = Object.keys(manifest.sections).sort();
@@ -91,8 +81,6 @@ export const runGet = async (
     );
   }
 
-  const cacheDirPath = await ensureCached(registry, manifest, { noCache: opts.noCache });
-
   let filePaths = [...sectionMeta.files];
   if (opts.grep) {
     let re: RegExp;
@@ -104,7 +92,9 @@ export const runGet = async (
     filePaths = filePaths.filter((p) => re.test(p));
   }
 
-  const files = await readSectionFiles(cacheDirPath, filePaths);
+  const files = await Promise.all(
+    filePaths.map(async (path) => ({ path, content: await readSectionFile(name, cwd, path) })),
+  );
   const format = resolveFormat(opts);
   const result = render(files, {
     format,
@@ -124,11 +114,9 @@ export const runGet = async (
 export const registerGetCommand = (program: Command): void => {
   program
     .command("get <name> [section]")
-    .description("Read a package's section (or list sections if omitted)")
-    .option("--version <range>", "version range (default: latest, or $CTXBREW_<NAME>_VERSION)")
+    .description("Read section from an installed package's .ctxbrew metadata")
     .option("--json", "emit JSON instead of markdown")
     .option("--files-only", "emit just the matched file paths, one per line")
-    .option("--no-cache", "force re-fetch even if cached")
     .option("--max-bytes <n>", "cap output size (e.g. 200k, 5m)")
     .option("--grep <regex>", "filter files by path regex")
     .action(async (name: string, section: string | undefined, opts: Options) => {

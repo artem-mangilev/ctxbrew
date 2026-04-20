@@ -1,9 +1,9 @@
 import { Command } from "commander";
+import { mkdir, rm } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import semver from "semver";
-import { pack } from "../archive/archive.ts";
 import { loadConfig } from "../config/load.ts";
 import { collectFiles } from "../extract/collect.ts";
-import { getRegistry } from "../registry/factory.ts";
 import { MANIFEST_SCHEMA_VERSION, type Manifest } from "../registry/types.ts";
 import { configError } from "../utils/exit.ts";
 import { colorize, logger } from "../utils/logger.ts";
@@ -41,6 +41,8 @@ const enforceLimits = (
 
 export const runPublish = async (opts: Options): Promise<void> => {
   const cwd = opts.cwd ?? process.cwd();
+  const ctxbrewDir = join(cwd, ".ctxbrew");
+  const ctxbrewFilesDir = join(ctxbrewDir, "files");
   let versionOverride: string | undefined;
   if (opts.version) {
     const v = semver.valid(semver.coerce(opts.version) ?? opts.version);
@@ -78,14 +80,11 @@ export const runPublish = async (opts: Options): Promise<void> => {
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([path, content]) => ({ path, content }));
 
-  const { bytes: payload, sha256 } = await pack({ files: sortedFiles });
-
   const manifest: Manifest = {
     schemaVersion: MANIFEST_SCHEMA_VERSION,
     name: config.name,
     version: config.version,
     publishedAt: new Date().toISOString(),
-    payload: { sha256, bytes: payload.byteLength },
     sections: Object.fromEntries(
       Object.entries(sectionFiles).map(([k, v]) => [k, { files: v }]),
     ),
@@ -93,7 +92,7 @@ export const runPublish = async (opts: Options): Promise<void> => {
 
   if (opts.dryRun) {
     logger.info(
-      `dry-run: would publish ${sortedFiles.length} file(s), payload ${payload.byteLength} bytes, sha256 ${sha256.slice(0, 12)}`,
+      `dry-run: would write ${sortedFiles.length} file(s) to ${ctxbrewDir}`,
     );
     for (const [section, files] of Object.entries(sectionFiles)) {
       logger.info(`  - ${section}: ${files.length} file(s)`);
@@ -101,20 +100,27 @@ export const runPublish = async (opts: Options): Promise<void> => {
     return;
   }
 
-  const registry = getRegistry();
-  await registry.publish({ manifest, payload });
+  await rm(ctxbrewDir, { recursive: true, force: true });
+  await mkdir(ctxbrewFilesDir, { recursive: true });
+
+  for (const { path, content } of sortedFiles) {
+    const outPath = join(ctxbrewFilesDir, path);
+    await mkdir(dirname(outPath), { recursive: true });
+    await Bun.write(outPath, content);
+  }
+  await Bun.write(join(ctxbrewDir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 
   logger.success(
-    `published ${config.name}@${config.version} -> ${registry.describe()} (${sortedFiles.length} files, ${payload.byteLength} bytes)`,
+    `prepared ${config.name}@${config.version} -> ${ctxbrewDir} (${sortedFiles.length} files)`,
   );
 };
 
 export const registerPublishCommand = (program: Command): void => {
   program
     .command("publish")
-    .description("Pack matched files and publish to the registry")
+    .description("Build .ctxbrew artifacts to be included in npm publish")
     .option("--version <semver>", "override version from config/package manifest")
-    .option("--dry-run", "validate and pack but do not write to registry")
+    .option("--dry-run", "validate and collect files but do not write .ctxbrew")
     .option("--cwd <dir>", "project root (defaults to current directory)")
     .action(async (opts: Options) => {
       await runPublish(opts);

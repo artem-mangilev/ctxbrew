@@ -30,8 +30,8 @@ Examples:
 
 ```
 feat(publish): support --tag for dist-tags
-fix(cache): prune stale payloads on integrity mismatch
-docs: clarify CTXBREW_HOME override
+fix(get): handle missing .ctxbrew metadata in node_modules package
+docs: clarify prepack integration for ctxb publish
 ```
 
 Breaking changes:

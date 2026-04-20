@@ -15,16 +15,13 @@ export const withTmpDir = async <T>(fn: (dir: string) => Promise<T>): Promise<T>
   }
 };
 
-export const withTmpCtxbrewHome = async <T>(fn: (home: string) => Promise<T>): Promise<T> => {
-  const dir = await makeTmpDir("ctxbrew-home-");
-  const prev = process.env.CTXBREW_HOME;
-  process.env.CTXBREW_HOME = dir;
+export const withCwd = async <T>(cwd: string, fn: () => Promise<T>): Promise<T> => {
+  const prev = process.cwd();
+  process.chdir(cwd);
   try {
-    return await fn(dir);
+    return await fn();
   } finally {
-    if (prev === undefined) delete process.env.CTXBREW_HOME;
-    else process.env.CTXBREW_HOME = prev;
-    await rm(dir, { recursive: true, force: true });
+    process.chdir(prev);
   }
 };
 
@@ -35,4 +32,19 @@ export const writeFiles = async (
   for (const [rel, content] of Object.entries(files)) {
     await Bun.write(join(root, rel), content);
   }
+};
+
+export const captureStdout = async (fn: () => Promise<void>): Promise<string> => {
+  const original = process.stdout.write.bind(process.stdout);
+  let buf = "";
+  (process.stdout as unknown as { write: (s: unknown) => boolean }).write = (s: unknown) => {
+    buf += typeof s === "string" ? s : new TextDecoder().decode(s as Uint8Array);
+    return true;
+  };
+  try {
+    await fn();
+  } finally {
+    (process.stdout as unknown as { write: (s: unknown) => boolean }).write = original as unknown as (s: unknown) => boolean;
+  }
+  return buf;
 };
