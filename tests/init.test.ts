@@ -4,7 +4,7 @@ import { CtxbrewError } from "../src/utils/exit.ts";
 import { withTmpDir, writeFiles } from "./helpers.ts";
 
 describe("init", () => {
-  test("writes package.json#ctxbrew and publish integration defaults", async () => {
+  test("writes package.json#ctxbrew and build integration defaults", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
         "package.json": JSON.stringify({
@@ -18,12 +18,12 @@ describe("init", () => {
       expect(ctxbrew).toBeDefined();
       expect(ctxbrew.cli).toBeDefined();
       expect((pkg as { files: string[] }).files).toContain(".ctxbrew");
-      expect((pkg as { scripts: { prepack: string } }).scripts.prepack).toBe("ctxb publish");
+      expect((pkg as { scripts: { prepack: string } }).scripts.prepack).toBe("ctxb build");
       expect(await Bun.file(`${dir}/.gitignore`).text()).toContain(".ctxbrew/");
     });
   });
 
-  test("throws if prepack exists without ctxb publish and --force is omitted", async () => {
+  test("throws if prepack exists without ctxb build and --force is omitted", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
         "package.json": JSON.stringify({
@@ -38,7 +38,7 @@ describe("init", () => {
     });
   });
 
-  test("prepends ctxb publish to prepack with --force", async () => {
+  test("prepends ctxb build to prepack with --force", async () => {
     await withTmpDir(async (dir) => {
       await writeFiles(dir, {
         "package.json": JSON.stringify({
@@ -51,9 +51,7 @@ describe("init", () => {
       });
       await runInit({ cwd: dir, force: true });
       const pkg = await Bun.file(`${dir}/package.json`).json();
-      expect((pkg as { scripts: { prepack: string } }).scripts.prepack).toBe(
-        "ctxb publish && npm run build",
-      );
+      expect((pkg as { scripts: { prepack: string } }).scripts.prepack).toBe("ctxb build && npm run build");
     });
   });
 

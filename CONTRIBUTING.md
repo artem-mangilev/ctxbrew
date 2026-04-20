@@ -31,7 +31,7 @@ Examples:
 ```
 feat(publish): support --tag for dist-tags
 fix(get): handle missing .ctxbrew metadata in node_modules package
-docs: clarify prepack integration for ctxb publish
+docs: clarify prepack integration for ctxb build
 ```
 
 Breaking changes:

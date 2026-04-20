@@ -1,8 +1,8 @@
 import { Command } from "commander";
+import { registerBuildCommand } from "./build.ts";
 import { registerCompletionCommand } from "./completion.ts";
 import { registerGetCommand } from "./get.ts";
 import { registerInitCommand } from "./init.ts";
-import { registerPublishCommand } from "./publish.ts";
 import { CtxbrewError, ExitCode } from "../utils/exit.ts";
 import { logger } from "../utils/logger.ts";
 
@@ -14,7 +14,7 @@ export const buildProgram = (toolVersion: string): Command => {
       "Pack docs/source into versioned context bundles for AI agents.",
     )
     // enablePositionalOptions scopes --version to its position: `ctxb --version`
-    // returns the tool version, `ctxb publish --version 1.0.0` is the publish flag.
+    // returns the tool version, `ctxb build --version 1.0.0` is the build flag.
     .enablePositionalOptions(true)
     .version(toolVersion, "-V, --version", "print ctxb version")
     .showHelpAfterError(true)
@@ -23,7 +23,7 @@ export const buildProgram = (toolVersion: string): Command => {
     });
 
   registerInitCommand(program);
-  registerPublishCommand(program);
+  registerBuildCommand(program);
   registerGetCommand(program);
   registerCompletionCommand(program);
 

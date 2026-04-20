@@ -37,7 +37,7 @@ This adds `ctxbrew` config and npm publish wiring in `package.json`:
   "version": "0.1.0",
   "files": ["dist", ".ctxbrew"],
   "scripts": {
-    "prepack": "ctxb publish"
+    "prepack": "ctxb build"
   },
   "ctxbrew": {
     "cli": {
@@ -51,7 +51,7 @@ This adds `ctxbrew` config and npm publish wiring in `package.json`:
 Build ctxbrew artifacts (also runs automatically during `npm publish` via `prepack`):
 
 ```bash
-ctxb publish
+ctxb build
 ```
 
 Install the package and read sections from installed `node_modules`:
@@ -91,9 +91,9 @@ Example:
 
 ### `ctxb init [--cwd DIR] [--force]`
 
-Create/update starter `package.json#ctxbrew`, ensure `.ctxbrew` is in package `files`, set `scripts.prepack` to run `ctxb publish`, and add `.ctxbrew/` to `.gitignore`.
+Create/update starter `package.json#ctxbrew`, ensure `.ctxbrew` is in package `files`, set `scripts.prepack` to run `ctxb build`, and add `.ctxbrew/` to `.gitignore`.
 
-### `ctxb publish [--version SEMVER] [--dry-run] [--cwd DIR]`
+### `ctxb build [--version SEMVER] [--dry-run] [--cwd DIR]`
 
 Collect files from `ctxbrew.cli` and write package artifacts into `.ctxbrew/` in the project root.
 
@@ -129,9 +129,9 @@ Print completion script.
 
 ## npm publish integration
 
-- `ctxb publish` prepares `.ctxbrew` locally.
+- `ctxb build` prepares `.ctxbrew` locally.
 - npm includes `.ctxbrew` in the package tarball via `package.json#files`.
-- `prepack` runs before `npm pack` and `npm publish`, so `ctxb publish` regenerates artifacts automatically.
+- `prepack` runs before `npm pack` and `npm publish`, so `ctxb build` regenerates artifacts automatically.
 
 ## Exit Codes
 
@@ -162,7 +162,7 @@ Use this workflow in your agent skill:
 ```text
 publisher project                    npm                              consumer project
 -----------------                    ---                              ----------------
-ctxb publish -------------------->   npm publish / npm install ----> node_modules/<name>/.ctxbrew/...
+ctxb build ---------------------->   npm publish / npm install ----> node_modules/<name>/.ctxbrew/...
   writes .ctxbrew/manifest.json                                        |
   writes .ctxbrew/files/*                                              v
                                                            ctxb get <name> [section]

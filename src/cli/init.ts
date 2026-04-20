@@ -77,7 +77,7 @@ export const runInit = async (opts: Options): Promise<void> => {
   const scriptsRaw = (parsed as { scripts?: unknown }).scripts;
   let nextScripts: Record<string, string>;
   if (scriptsRaw === undefined) {
-    nextScripts = { prepack: "ctxb publish" };
+    nextScripts = { prepack: "ctxb build" };
   } else if (
     typeof scriptsRaw === "object" &&
     scriptsRaw !== null &&
@@ -87,15 +87,15 @@ export const runInit = async (opts: Options): Promise<void> => {
     nextScripts = { ...(scriptsRaw as Record<string, string>) };
     const prepack = nextScripts.prepack;
     if (!prepack) {
-      nextScripts.prepack = "ctxb publish";
-    } else if (!prepack.includes("ctxb publish")) {
+      nextScripts.prepack = "ctxb build";
+    } else if (!prepack.includes("ctxb build")) {
       if (!opts.force) {
         throw configError(
-          'package.json scripts.prepack exists but does not include "ctxb publish"',
-          "Use --force to prepend ctxb publish to prepack automatically.",
+          'package.json scripts.prepack exists but does not include "ctxb build"',
+          "Use --force to prepend ctxb build to prepack automatically.",
         );
       }
-      nextScripts.prepack = `ctxb publish && ${prepack}`;
+      nextScripts.prepack = `ctxb build && ${prepack}`;
     }
   } else {
     throw configError(
@@ -107,7 +107,7 @@ export const runInit = async (opts: Options): Promise<void> => {
   await Bun.write(target, `${JSON.stringify(next, null, 2)}\n`);
   await ensureGitignoreEntry(cwd, ".ctxbrew/");
   logger.success(`updated ${target} with package.json#ctxbrew`);
-  logger.info("Added package.json files/.ctxbrew, scripts.prepack=ctxb publish and .gitignore entry.");
+  logger.info("Added package.json files/.ctxbrew, scripts.prepack=ctxb build and .gitignore entry.");
 };
 
 export const registerInitCommand = (program: Command): void => {

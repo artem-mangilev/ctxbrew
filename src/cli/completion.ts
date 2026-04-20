@@ -1,8 +1,7 @@
 import { Command } from "commander";
 import { usageError } from "../utils/exit.ts";
 
-const TOP_LEVEL = ["init", "publish", "install", "list", "info", "cache", "get", "completion", "help"];
-const CACHE_SUB = ["clear", "prune"];
+const TOP_LEVEL = ["init", "build", "get", "completion", "help"];
 
 const bashScript = (): string => `# ctxb bash completion
 _ctxb_complete() {
@@ -16,11 +15,6 @@ _ctxb_complete() {
     return 0
   fi
   case "\${COMP_WORDS[1]}" in
-    cache)
-      if [[ \$COMP_CWORD -eq 2 ]]; then
-        COMPREPLY=( \$(compgen -W "${CACHE_SUB.join(" ")}" -- "\$cur") )
-      fi
-      ;;
     completion)
       if [[ \$COMP_CWORD -eq 2 ]]; then
         COMPREPLY=( \$(compgen -W "bash zsh fish" -- "\$cur") )
@@ -41,11 +35,6 @@ _ctxb() {
     return
   fi
   case "\${words[2]}" in
-    cache)
-      if (( CURRENT == 3 )); then
-        _values 'subcommand' ${CACHE_SUB.map((c) => `'${c}'`).join(" ")}
-      fi
-      ;;
     completion)
       if (( CURRENT == 3 )); then
         _values 'shell' 'bash' 'zsh' 'fish'
@@ -58,7 +47,6 @@ _ctxb "$@"
 
 const fishScript = (): string => `# ctxb fish completion
 complete -c ctxb -n '__fish_use_subcommand' -a '${TOP_LEVEL.join(" ")}'
-complete -c ctxb -n '__fish_seen_subcommand_from cache' -a '${CACHE_SUB.join(" ")}'
 complete -c ctxb -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish'
 `;
 

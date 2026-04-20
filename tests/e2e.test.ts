@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { runGet } from "../src/cli/get.ts";
-import { runPublish } from "../src/cli/publish.ts";
+import { runBuild } from "../src/cli/build.ts";
 import { withCwd, withTmpDir, writeFiles, captureStdout } from "./helpers.ts";
 
 const seedProject = async (root: string): Promise<void> => {
@@ -22,11 +22,11 @@ const seedProject = async (root: string): Promise<void> => {
   });
 };
 
-describe("e2e: publish -> get", () => {
-  test("publish writes .ctxbrew, get streams content from node_modules", async () => {
+describe("e2e: build -> get", () => {
+  test("build writes .ctxbrew, get streams content from node_modules", async () => {
     await withTmpDir(async (proj) => {
       await seedProject(proj);
-      await runPublish({ cwd: proj });
+      await runBuild({ cwd: proj });
 
       await writeFiles(proj, {
         "node_modules/demo/package.json": JSON.stringify({ name: "demo", version: "1.0.0" }),
@@ -104,10 +104,10 @@ describe("e2e: publish -> get", () => {
     });
   });
 
-  test("publish --dry-run writes nothing", async () => {
+  test("build --dry-run writes nothing", async () => {
     await withTmpDir(async (proj) => {
       await seedProject(proj);
-      await runPublish({ cwd: proj, dryRun: true });
+      await runBuild({ cwd: proj, dryRun: true });
       expect(await Bun.file(join(proj, ".ctxbrew/manifest.json")).exists()).toBe(false);
     });
   });

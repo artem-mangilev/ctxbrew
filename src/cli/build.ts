@@ -25,21 +25,21 @@ const enforceLimits = (
 ): void => {
   if (bytesByFile.size > caps.maxFiles) {
     throw configError(
-      `Publish exceeds maxFiles cap (${bytesByFile.size} > ${caps.maxFiles})`,
-      "Tighten your ctxbrew.cli globs to publish fewer files.",
+      `Build exceeds maxFiles cap (${bytesByFile.size} > ${caps.maxFiles})`,
+      "Tighten your ctxbrew.cli globs to include fewer files.",
     );
   }
   let total = 0;
   for (const b of bytesByFile.values()) total += b;
   if (total > caps.maxBytes) {
     throw configError(
-      `Publish exceeds maxBytes cap (${total} > ${caps.maxBytes})`,
-      "Tighten your ctxbrew.cli globs to reduce publish size.",
+      `Build exceeds maxBytes cap (${total} > ${caps.maxBytes})`,
+      "Tighten your ctxbrew.cli globs to reduce total size.",
     );
   }
 };
 
-export const runPublish = async (opts: Options): Promise<void> => {
+export const runBuild = async (opts: Options): Promise<void> => {
   const cwd = opts.cwd ?? process.cwd();
   const ctxbrewDir = join(cwd, ".ctxbrew");
   const ctxbrewFilesDir = join(ctxbrewDir, "files");
@@ -52,7 +52,7 @@ export const runPublish = async (opts: Options): Promise<void> => {
   const { config, configPath } = await loadConfig(cwd, { versionOverride });
 
   logger.info(
-    `publishing ${colorize.bold(config.name)}@${config.version} (config: ${configPath})`,
+    `building ${colorize.bold(config.name)}@${config.version} (config: ${configPath})`,
   );
 
   const sectionFiles: Record<string, string[]> = {};
@@ -115,14 +115,14 @@ export const runPublish = async (opts: Options): Promise<void> => {
   );
 };
 
-export const registerPublishCommand = (program: Command): void => {
+export const registerBuildCommand = (program: Command): void => {
   program
-    .command("publish")
+    .command("build")
     .description("Build .ctxbrew artifacts to be included in npm publish")
     .option("--version <semver>", "override version from config/package manifest")
     .option("--dry-run", "validate and collect files but do not write .ctxbrew")
     .option("--cwd <dir>", "project root (defaults to current directory)")
     .action(async (opts: Options) => {
-      await runPublish(opts);
+      await runBuild(opts);
     });
 };
