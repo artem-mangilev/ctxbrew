@@ -18,4 +18,11 @@ try {
 }
 
 const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: "inherit" });
+if (result.error) {
+  console.error(`ctxbrew: failed to run ${binaryPath}: ${result.error.message}`);
+  if (result.error.code === "EACCES") {
+    console.error("ctxbrew: platform binary is not executable; reinstall or upgrade ctxbrew.");
+  }
+  process.exit(1);
+}
 process.exit(result.status ?? 1);

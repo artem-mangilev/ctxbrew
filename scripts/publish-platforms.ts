@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
-import { mkdtemp, mkdir, rm } from "node:fs/promises";
+import { chmod, mkdtemp, mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-type PlatformPkg = {
+export type PlatformPkg = {
   name: string;
   os: string[];
   cpu: string[];
@@ -11,7 +11,7 @@ type PlatformPkg = {
   binaryName: string;
 };
 
-const PLATFORMS: PlatformPkg[] = [
+export const PLATFORMS: PlatformPkg[] = [
   {
     name: "@ctxbrew/darwin-arm64",
     os: ["darwin"],
@@ -49,30 +49,25 @@ const PLATFORMS: PlatformPkg[] = [
   },
 ];
 
-const version = process.env.CTXBREW_RELEASE_VERSION;
-if (!version) {
-  process.stderr.write("CTXBREW_RELEASE_VERSION env var is required.\n");
-  process.exit(1);
-}
-
-const npmToken = process.env.NPM_TOKEN ?? process.env.NODE_AUTH_TOKEN;
-if (!npmToken) {
-  process.stderr.write("NPM_TOKEN (or NODE_AUTH_TOKEN) is required.\n");
-  process.exit(1);
-}
-
 const run = async (cmd: string[], cwd: string): Promise<void> => {
   const proc = Bun.spawn({ cmd, cwd, stdout: "inherit", stderr: "inherit", stdin: "inherit" });
   const code = await proc.exited;
   if (code !== 0) process.exit(code);
 };
 
-const writePackage = async (workspace: string, platform: PlatformPkg): Promise<void> => {
+export const writePlatformPackage = async (
+  workspace: string,
+  platform: PlatformPkg,
+  version: string,
+  sourceRoot = process.cwd(),
+): Promise<void> => {
   const dir = join(workspace, platform.name.replace("@ctxbrew/", ""));
   await mkdir(join(dir, "bin"), { recursive: true });
-  const src = join(process.cwd(), "dist", platform.distFile);
+  const src = join(sourceRoot, "dist", platform.distFile);
+  const dest = join(dir, "bin", platform.binaryName);
   const bytes = await Bun.file(src).bytes();
-  await Bun.write(join(dir, "bin", platform.binaryName), bytes);
+  await Bun.write(dest, bytes);
+  await chmod(dest, 0o755);
   await Bun.write(
     join(dir, "package.json"),
     `${JSON.stringify(
@@ -90,10 +85,22 @@ const writePackage = async (workspace: string, platform: PlatformPkg): Promise<v
 };
 
 const main = async (): Promise<void> => {
+  const version = process.env.CTXBREW_RELEASE_VERSION;
+  if (!version) {
+    process.stderr.write("CTXBREW_RELEASE_VERSION env var is required.\n");
+    process.exit(1);
+  }
+
+  const npmToken = process.env.NPM_TOKEN ?? process.env.NODE_AUTH_TOKEN;
+  if (!npmToken) {
+    process.stderr.write("NPM_TOKEN (or NODE_AUTH_TOKEN) is required.\n");
+    process.exit(1);
+  }
+
   const workspace = await mkdtemp(join(tmpdir(), "ctxbrew-platforms-"));
   try {
     for (const platform of PLATFORMS) {
-      await writePackage(workspace, platform);
+      await writePlatformPackage(workspace, platform, version);
       const cwd = join(workspace, platform.name.replace("@ctxbrew/", ""));
       await run(["npm", "publish", "--access", "public"], cwd);
     }
@@ -102,4 +109,6 @@ const main = async (): Promise<void> => {
   }
 };
 
-await main();
+if (import.meta.main) {
+  await main();
+}
