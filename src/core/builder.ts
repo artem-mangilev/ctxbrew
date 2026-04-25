@@ -3,8 +3,8 @@ import { dirname, join } from "node:path";
 import { loadCtxbrewConfig, titleFromId, type CtxbrewSlice } from "./config.ts";
 import { renderFrontmatter } from "./frontmatter.ts";
 import { type IndexManifest, serializeIndexManifest } from "./index-manifest.ts";
+import { packSlice } from "./packer.ts";
 import { CURRENT_PROTOCOL_VERSION } from "./protocol.ts";
-import { runRepomix } from "./repomix-runner.ts";
 import { assertNoPromptInjection, validateConfigForBuild } from "./validator.ts";
 import { configError } from "../utils/exit.ts";
 
@@ -31,14 +31,14 @@ const scanFilesForPromptInjection = async (cwd: string, files: string[]): Promis
   }
 };
 
-const renderSliceBody = (slice: CtxbrewSlice, repomixContent: string): string => {
+const renderSliceBody = (slice: CtxbrewSlice, packedContent: string): string => {
   const title = slice.title ?? titleFromId(slice.id);
   const frontmatter = renderFrontmatter({
     id: slice.id,
     title,
     description: slice.description,
   });
-  return `${frontmatter}\n# ${title}\n\n${repomixContent.trim()}\n`;
+  return `${frontmatter}\n# ${title}\n\n${packedContent.trim()}\n`;
 };
 
 export const buildCtxbrewArtifacts = async (
@@ -59,15 +59,15 @@ export const buildCtxbrewArtifacts = async (
       throw configError(`Slice "${slice.id}" matched no files`);
     }
     await scanFilesForPromptInjection(cwd, matches);
-    const repomix = await runRepomix(cwd, slice.include, [...used]);
+    const packed = await packSlice(cwd, slice.include, [...used], { compress: slice.compress });
     for (const file of matches) used.add(file);
 
     const fileName = `${slice.id}.md`;
     slicesOut.push({
       id: slice.id,
       file: fileName,
-      matchedFiles: repomix.files.length > 0 ? repomix.files : matches,
-      content: renderSliceBody(slice, repomix.content),
+      matchedFiles: packed.files.length > 0 ? packed.files : matches,
+      content: renderSliceBody(slice, packed.content),
     });
     manifest.slices.push({
       id: slice.id,

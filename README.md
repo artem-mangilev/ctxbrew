@@ -70,6 +70,7 @@ slices:
   - id: components
     title: Components
     description: UI components and usage
+    compress: true
     include:
       - src/components/**
       - docs/components/**
@@ -80,6 +81,7 @@ Rules:
 - `version` is required and currently must be `1`.
 - `id` must be unique kebab-case.
 - `include` is required and non-empty.
+- `compress` is optional and defaults to `false`; when enabled, JS/TS files are reduced to top-level signatures.
 - Overlap policy: first matching slice owns the file.
 
 ## Setup for agents

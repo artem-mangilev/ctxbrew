@@ -11,6 +11,7 @@ export const CtxbrewSliceSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().min(1),
   include: z.array(z.string().min(1)).min(1),
+  compress: z.boolean().optional(),
 });
 
 export const CtxbrewConfigSchema = z.object({

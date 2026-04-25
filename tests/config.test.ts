@@ -11,6 +11,7 @@ describe("config", () => {
           "slices:",
           "  - id: overview",
           "    description: Overview",
+          "    compress: true",
           "    include:",
           "      - README.md",
           "",
@@ -18,6 +19,7 @@ describe("config", () => {
       });
       const loaded = await loadCtxbrewConfig(dir);
       expect(loaded.config.slices[0].id).toBe("overview");
+      expect(loaded.config.slices[0].compress).toBe(true);
     });
   });
 });

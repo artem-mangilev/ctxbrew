@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { registerBuildCommand } from "./build.ts";
 import { registerGetCommand } from "./get.ts";
 import { registerInitCommand } from "./init.ts";
 import { registerListCommand } from "./list.ts";
@@ -23,7 +22,15 @@ export const buildProgram = (toolVersion: string): Command => {
     });
 
   registerInitCommand(program);
-  registerBuildCommand(program);
+  program
+    .command("build")
+    .description("Build ctxbrew artifacts (`ctxbrew/*.md` and `ctxbrew/index.yaml`)")
+    .option("--check", "validate config and inputs only, do not write files")
+    .option("--cwd <dir>", "project root (defaults to current directory)")
+    .action(async (opts: { check?: boolean; cwd?: string }) => {
+      const { runBuild } = await import("./build.ts");
+      await runBuild(opts);
+    });
   registerListCommand(program);
   registerGetCommand(program);
   registerSearchCommand(program);

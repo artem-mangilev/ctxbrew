@@ -130,4 +130,65 @@ describe("e2e", () => {
       expect(slice).toContain("\"color\": \"blue\"");
     });
   });
+
+  test("build compresses js and ts files when slice enables compress", async () => {
+    await withTmpDir(async (root) => {
+      await writeFiles(root, {
+        "package.json": JSON.stringify({ name: "pkg-a", version: "1.2.3" }),
+        "README.md": "# API notes\nKeep prose unchanged.\n",
+        "src/widget.ts": [
+          "import type { Theme } from './theme';",
+          "",
+          "export interface WidgetOptions {",
+          "  label: string;",
+          "}",
+          "",
+          "export function createWidget(options: WidgetOptions): { label: string } {",
+          "  const secretImplementationDetail = options.label.toUpperCase();",
+          "  return { label: secretImplementationDetail };",
+          "}",
+          "",
+          "export class Widget {",
+          "  readonly label: string;",
+          "  constructor(label: string) {",
+          "    this.label = label;",
+          "  }",
+          "  render(target: HTMLElement): void {",
+          "    target.textContent = this.label;",
+          "  }",
+          "}",
+          "",
+          "export const createInline = (label: string): Widget => {",
+          "  return new Widget(label);",
+          "};",
+          "",
+        ].join("\n"),
+        "ctxbrew.yaml": [
+          "version: 1",
+          "slices:",
+          "  - id: api",
+          "    description: Compressed API sources",
+          "    compress: true",
+          "    include:",
+          "      - README.md",
+          "      - src/**/*.ts",
+          "",
+        ].join("\n"),
+      });
+
+      await runBuild({ cwd: root });
+      const slice = await Bun.file(join(root, "ctxbrew/api.md")).text();
+
+      expect(slice).toContain("Keep prose unchanged.");
+      expect(slice).toContain("export interface WidgetOptions");
+      expect(slice).toContain("export function createWidget(options: WidgetOptions): { label: string };");
+      expect(slice).toContain("export class Widget");
+      expect(slice).toContain("constructor(label: string);");
+      expect(slice).toContain("render(target: HTMLElement): void;");
+      expect(slice).toContain("export const createInline = (label: string): Widget => ...;");
+      expect(slice).not.toContain("secretImplementationDetail");
+      expect(slice).not.toContain("target.textContent");
+      expect(slice).not.toContain("return new Widget(label)");
+    });
+  });
 });
