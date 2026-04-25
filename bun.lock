@@ -21,11 +21,11 @@
         "zod": "^4.3.6",
       },
       "optionalDependencies": {
-        "@ctxbrew/darwin-arm64": "0.1.0",
-        "@ctxbrew/darwin-x64": "0.1.0",
-        "@ctxbrew/linux-arm64": "0.1.0",
-        "@ctxbrew/linux-x64": "0.1.0",
-        "@ctxbrew/win32-x64": "0.1.0",
+        "@ctxbrew/darwin-arm64": "0.1.1",
+        "@ctxbrew/darwin-x64": "0.1.1",
+        "@ctxbrew/linux-arm64": "0.1.1",
+        "@ctxbrew/linux-x64": "0.1.1",
+        "@ctxbrew/win32-x64": "0.1.1",
       },
     },
   },
@@ -47,6 +47,16 @@
     "@clack/prompts": ["@clack/prompts@0.11.0", "", { "dependencies": { "@clack/core": "0.5.0", "picocolors": "^1.0.0", "sisteransi": "^1.0.5" } }, "sha512-pMN5FcrEw9hUkZA4f+zLlzivQSeQf5dRGJjSUbvVYDLvpKCdQx5OaknvKzgbtXOizhP+SJJJjqEbOe55uKKfAw=="],
 
     "@colors/colors": ["@colors/colors@1.5.0", "", {}, "sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ=="],
+
+    "@ctxbrew/darwin-arm64": ["@ctxbrew/darwin-arm64@0.1.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-K6XEJjhsR8AHSICy4af/rCaY5b61fKXIIfFWGzzyolM93pidtfwup6BBjiUXAhJ8lhVflIPdF9D3/1Uiqe4oFw=="],
+
+    "@ctxbrew/darwin-x64": ["@ctxbrew/darwin-x64@0.1.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-xHg6/Ng3XZulrI+01sTeQxI5iOyvTAw3aJkt5wDsMijR9bGRsoDeWNLkLT7E+yPxPsnuodTDieK5DxMi/Xjceg=="],
+
+    "@ctxbrew/linux-arm64": ["@ctxbrew/linux-arm64@0.1.1", "", { "os": "linux", "cpu": "arm64" }, "sha512-49oPTupqrsVOh1Z014m/D88IsaMksHyzVdxTvl6AKORon94ADPeKmNcroMrJJzdz4AoGgJtWnkdkb+P7GDBgWg=="],
+
+    "@ctxbrew/linux-x64": ["@ctxbrew/linux-x64@0.1.1", "", { "os": "linux", "cpu": "x64" }, "sha512-yNyTC8HPb+fO6GqA3YxB21DVdPOEe4yqWd/OTvPQMAP8fhQmBlEp5SyD6ufZBAraHfptjU6qiqPLO+eGL1u52w=="],
+
+    "@ctxbrew/win32-x64": ["@ctxbrew/win32-x64@0.1.1", "", { "os": "win32", "cpu": "x64" }, "sha512-t4X3sv0XL8UlLKM5Vqo3w/nfAxRb7xofq+G64pbohFHMdr1Gf/m7n0v2abNz1O0cas1Zvt3XTaBgKysq6NAxRg=="],
 
     "@hono/node-server": ["@hono/node-server@1.19.14", "", { "peerDependencies": { "hono": "^4" } }, "sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw=="],
 
