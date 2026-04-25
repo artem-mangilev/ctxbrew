@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/artem-mangilev/ctxbrew/compare/v0.1.1...v0.1.2) (2026-04-25)
+
+
+### Bug Fixes
+
+* fix binary launching ([6533444](https://github.com/artem-mangilev/ctxbrew/commit/6533444ca6521bb5d4595ef10df84e7514177d58))
+
 ## [0.1.1](https://github.com/artem-mangilev/ctxbrew/compare/v0.1.0...v0.1.1) (2026-04-25)
 
 
