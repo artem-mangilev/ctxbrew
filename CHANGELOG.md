@@ -1,0 +1,6 @@
+## [0.1.1](https://github.com/artem-mangilev/ctxbrew/compare/v0.1.0...v0.1.1) (2026-04-25)
+
+
+### Bug Fixes
+
+* remove AGENTS.md requirement ([6261f1d](https://github.com/artem-mangilev/ctxbrew/commit/6261f1d26a6f6e01f4e2122dce7c71c9dc4312cb))

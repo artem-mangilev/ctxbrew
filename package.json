@@ -1,6 +1,6 @@
 {
   "name": "ctxbrew",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "devDependencies": {
     "@pnpm/lockfile-file": "^9.1.3",
     "@semantic-release/changelog": "^6.0.3",
@@ -18,11 +18,11 @@
     "zod": "^4.3.6"
   },
   "optionalDependencies": {
-    "@ctxbrew/darwin-arm64": "0.1.0",
-    "@ctxbrew/darwin-x64": "0.1.0",
-    "@ctxbrew/linux-x64": "0.1.0",
-    "@ctxbrew/linux-arm64": "0.1.0",
-    "@ctxbrew/win32-x64": "0.1.0"
+    "@ctxbrew/darwin-arm64": "0.1.1",
+    "@ctxbrew/darwin-x64": "0.1.1",
+    "@ctxbrew/linux-x64": "0.1.1",
+    "@ctxbrew/linux-arm64": "0.1.1",
+    "@ctxbrew/win32-x64": "0.1.1"
   },
   "bin": {
     "ctxbrew": "./bin/ctxbrew.js"
