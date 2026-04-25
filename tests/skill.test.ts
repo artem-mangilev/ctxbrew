@@ -9,5 +9,7 @@ describe("skill", () => {
     });
     expect(output).toContain("ctxbrew list");
     expect(output).toContain("ctxbrew get <package> <slice-id>");
+    expect(output).toContain("If ctxbrew is not installed");
+    expect(output).toContain("npm install -g ctxbrew");
   });
 });

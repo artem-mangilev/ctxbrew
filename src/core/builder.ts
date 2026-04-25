@@ -9,7 +9,7 @@ import { assertNoPromptInjection, validateConfigForBuild } from "./validator.ts"
 import { configError } from "../utils/exit.ts";
 
 export type BuildResult = {
-  slices: Array<{ id: string; file: string; matchedFiles: string[] }>;
+  slices: Array<{ id: string; file: string; matchedFiles: string[]; content: string }>;
   configPath: string;
 };
 
@@ -24,21 +24,21 @@ const collectMatches = async (cwd: string, patterns: string[]): Promise<string[]
   return [...out].sort();
 };
 
-const renderSliceBody = async (cwd: string, slice: CtxbrewSlice, files: string[]): Promise<string> => {
+const scanFilesForPromptInjection = async (cwd: string, files: string[]): Promise<void> => {
+  for (const relPath of files) {
+    const text = await Bun.file(join(cwd, relPath)).text();
+    assertNoPromptInjection(relPath, text);
+  }
+};
+
+const renderSliceBody = (slice: CtxbrewSlice, repomixContent: string): string => {
   const title = slice.title ?? titleFromId(slice.id);
   const frontmatter = renderFrontmatter({
     id: slice.id,
     title,
     description: slice.description,
   });
-  const chunks: string[] = [frontmatter, `\n# ${title}\n\n## Files\n\n`];
-  for (const relPath of files) {
-    const file = Bun.file(join(cwd, relPath));
-    const text = await file.text();
-    assertNoPromptInjection(relPath, text);
-    chunks.push(`### ${relPath}\n\n\`\`\`\n${text.endsWith("\n") ? text : `${text}\n`}\`\`\`\n\n`);
-  }
-  return chunks.join("");
+  return `${frontmatter}\n# ${title}\n\n${repomixContent.trim()}\n`;
 };
 
 const ensureAgentsFile = async (cwd: string): Promise<void> => {
@@ -64,16 +64,22 @@ export const buildCtxbrewArtifacts = async (
   const manifest: IndexManifest = { version: CURRENT_PROTOCOL_VERSION, slices: [] };
 
   for (const slice of config.slices) {
-    await runRepomix(cwd, slice.include);
     const rawMatches = await collectMatches(cwd, slice.include);
     const matches = rawMatches.filter((path) => !used.has(path));
-    for (const file of matches) used.add(file);
     if (matches.length === 0) {
       throw configError(`Slice "${slice.id}" matched no files`);
     }
+    await scanFilesForPromptInjection(cwd, matches);
+    const repomix = await runRepomix(cwd, slice.include, [...used]);
+    for (const file of matches) used.add(file);
 
     const fileName = `${slice.id}.md`;
-    slicesOut.push({ id: slice.id, file: fileName, matchedFiles: matches });
+    slicesOut.push({
+      id: slice.id,
+      file: fileName,
+      matchedFiles: repomix.files.length > 0 ? repomix.files : matches,
+      content: renderSliceBody(slice, repomix.content),
+    });
     manifest.slices.push({
       id: slice.id,
       title: slice.title ?? titleFromId(slice.id),
@@ -89,10 +95,9 @@ export const buildCtxbrewArtifacts = async (
     for (const entry of slicesOut) {
       const slice = config.slices.find((it) => it.id === entry.id);
       if (!slice) continue;
-      const body = await renderSliceBody(cwd, slice, entry.matchedFiles);
       const outFile = join(outDir, entry.file);
       await mkdir(dirname(outFile), { recursive: true });
-      await Bun.write(outFile, body);
+      await Bun.write(outFile, entry.content);
     }
     await Bun.write(join(outDir, "index.yaml"), serializeIndexManifest(manifest));
     await ensureAgentsFile(cwd);

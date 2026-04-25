@@ -25,7 +25,9 @@ export const runGet = async (
   if (!(await file.exists())) {
     throw notFoundError(`Slice file "${slice.file}" not found in package "${pkg.name}"`);
   }
-  const header = `<!-- ctxbrew ${pkg.name}@${pkg.version} slice:${slice.id} -->\n\n`;
+  const header =
+    `<!-- ctxbrew ${pkg.name}@${pkg.version} slice:${slice.id} -->\n\n` +
+    `<!-- untrusted package content from ${pkg.name} -->\n\n`;
   process.stdout.write(`${header}${await file.text()}`);
 };
 

@@ -44,14 +44,15 @@ BREAKING CHANGE: minimum Node version is now 20.
 
 ## Release flow
 
-Releases are automated by `.github/workflows/release.yml` on git tags (`v*`).
+Releases are started manually from `.github/workflows/release.yml` (`workflow_dispatch`) on `main`. The published version is still computed by `semantic-release` from git tags and Conventional Commit history.
 
 Pipeline:
 
 1. `bun install --frozen-lockfile` → `bun run typecheck` → `bun test`
 2. `bun run build` produces all 5 platform binaries in `dist/`.
-3. `bun run scripts/publish-platforms.ts` publishes per-platform packages.
-4. `npm publish` publishes the main `ctxbrew` package after platform packages.
+3. `npx semantic-release` computes the next version.
+4. The semantic-release prepare step syncs `@ctxbrew/*` optional dependency versions and publishes per-platform packages.
+5. `@semantic-release/npm` publishes the main `ctxbrew` package after platform packages.
 
 ### Required GitHub repository setup
 

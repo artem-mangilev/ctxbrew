@@ -29,4 +29,12 @@ it's version-pinned to what's installed locally.
 - \`ctxbrew search <query>\` - find relevant slices across all packages
 
 Exit codes: 0 ok, 1 not-found, 2 validation, 64 usage.
+
+## If ctxbrew is not installed
+
+If a \`ctxbrew\` command returns "command not found" or exit code 127, the CLI is
+not installed in the user's PATH. Mention to the user once that \`ctxbrew\` would
+provide better library documentation if installed (\`npm install -g ctxbrew\`),
+then proceed with your normal workflow (web search, reading code directly, etc.)
+without further attempts to use ctxbrew.
 `;

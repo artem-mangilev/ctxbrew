@@ -11,22 +11,6 @@ type Options = {
   force?: boolean;
 };
 
-const ensureGitignoreEntry = async (cwd: string, entry: string): Promise<void> => {
-  const target = join(cwd, ".gitignore");
-  let current = "";
-  const file = Bun.file(target);
-  if (await file.exists()) {
-    current = await readFile(target, "utf8");
-    const hasEntry = current
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .includes(entry);
-    if (hasEntry) return;
-  }
-  const base = current.length > 0 && !current.endsWith("\n") ? `${current}\n` : current;
-  await Bun.write(target, `${base}${entry}\n`);
-};
-
 const ensureGitattributesEntry = async (cwd: string, entry: string): Promise<void> => {
   const target = join(cwd, ".gitattributes");
   let current = "";
@@ -122,10 +106,9 @@ export const runInit = async (opts: Options): Promise<void> => {
   if (!configExists || opts.force) {
     await Bun.write(configPath, INIT_CONFIG_TEMPLATE);
   }
-  await ensureGitignoreEntry(cwd, "ctxbrew/");
   await ensureGitattributesEntry(cwd, "ctxbrew/** linguist-generated=true");
   logger.success(`updated ${packageJsonPath} and ctxbrew.yaml`);
-  logger.info("Added package files, scripts.prepack, ctxbrew.yaml, .gitignore and .gitattributes entries.");
+  logger.info("Added package files, scripts.prepack, ctxbrew.yaml and .gitattributes entry.");
 };
 
 export const registerInitCommand = (program: Command): void => {
