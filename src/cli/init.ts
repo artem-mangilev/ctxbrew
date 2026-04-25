@@ -60,9 +60,9 @@ export const runInit = async (opts: Options): Promise<void> => {
   const currentFiles = (parsed as { files?: unknown }).files;
   let nextFiles: string[] | undefined;
   if (currentFiles === undefined) {
-    nextFiles = ["dist", "ctxbrew", "AGENTS.md"];
+    nextFiles = ["dist", "ctxbrew"];
   } else if (Array.isArray(currentFiles) && currentFiles.every((item) => typeof item === "string")) {
-    nextFiles = [...new Set([...currentFiles, "ctxbrew", "AGENTS.md"])];
+    nextFiles = [...new Set([...currentFiles, "ctxbrew"])];
   } else {
     throw configError(
       `package.json field "files" must be an array of strings at ${packageJsonPath}`,

@@ -35,7 +35,6 @@ Generated files:
 
 - `ctxbrew/index.yaml`
 - `ctxbrew/<slice-id>.md`
-- `AGENTS.md`
 
 ## Consumer workflow
 

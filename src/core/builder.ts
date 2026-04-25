@@ -41,17 +41,6 @@ const renderSliceBody = (slice: CtxbrewSlice, repomixContent: string): string =>
   return `${frontmatter}\n# ${title}\n\n${repomixContent.trim()}\n`;
 };
 
-const ensureAgentsFile = async (cwd: string): Promise<void> => {
-  const content = [
-    "# AGENTS",
-    "",
-    "This package ships ctxbrew context slices.",
-    "Use `ctxbrew list <package>` and `ctxbrew get <package> <slice-id>`.",
-    "",
-  ].join("\n");
-  await Bun.write(join(cwd, "AGENTS.md"), content);
-};
-
 export const buildCtxbrewArtifacts = async (
   cwd: string,
   opts: { checkOnly?: boolean } = {},
@@ -100,7 +89,6 @@ export const buildCtxbrewArtifacts = async (
       await Bun.write(outFile, entry.content);
     }
     await Bun.write(join(outDir, "index.yaml"), serializeIndexManifest(manifest));
-    await ensureAgentsFile(cwd);
   }
 
   return { slices: slicesOut, configPath };
