@@ -24,7 +24,7 @@ jobs:
       matrix:
         target:
           - { runner: macos-latest, target: bun-darwin-arm64, artifact: ctxbrew-darwin-arm64 }
-          - { runner: macos-13, target: bun-darwin-x64, artifact: ctxbrew-darwin-x64 }
+          - { runner: macos-latest, target: bun-darwin-x64, artifact: ctxbrew-darwin-x64 }
           - { runner: ubuntu-latest, target: bun-linux-x64, artifact: ctxbrew-linux-x64 }
           - { runner: ubuntu-latest, target: bun-linux-arm64, artifact: ctxbrew-linux-arm64 }
           - { runner: windows-latest, target: bun-windows-x64, artifact: ctxbrew-windows-x64.exe }
