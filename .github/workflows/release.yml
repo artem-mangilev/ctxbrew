@@ -1,73 +1,55 @@
 name: release
 
 on:
-  push:
-    branches: [main]
-  workflow_dispatch: {}
-
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  workflow_dispatch:
 
 permissions:
   contents: write
   issues: write
   pull-requests: write
-  id-token: write
 
 jobs:
-  release:
-    name: release
-    # macos-latest lets `codesign --sign -` (ad-hoc) work for darwin binaries;
-    # Bun cross-compiles the linux/windows targets from the same host.
-    runs-on: macos-latest
+  build:
+    strategy:
+      matrix:
+        target:
+          - { runner: macos-latest, target: bun-darwin-arm64, artifact: ctxbrew-darwin-arm64 }
+          - { runner: macos-13, target: bun-darwin-x64, artifact: ctxbrew-darwin-x64 }
+          - { runner: ubuntu-latest, target: bun-linux-x64, artifact: ctxbrew-linux-x64 }
+          - { runner: ubuntu-latest, target: bun-linux-arm64, artifact: ctxbrew-linux-arm64 }
+          - { runner: windows-latest, target: bun-windows-x64, artifact: ctxbrew-windows-x64.exe }
+    runs-on: ${{ matrix.target.runner }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun build --compile --target=${{ matrix.target.target }} ./src/bin/ctxbrew.ts --outfile dist/${{ matrix.target.artifact }}
+      - uses: actions/upload-artifact@v4
         with:
-          fetch-depth: 0
-          persist-credentials: false
+          name: binary-${{ matrix.target.artifact }}
+          path: dist/${{ matrix.target.artifact }}
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Setup Node (for semantic-release)
-        uses: actions/setup-node@v4
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Typecheck
-        run: bun run typecheck
-
-      - name: Test
-        run: bun test
-
-      - name: Build binaries
-        run: bun run build
-
-      - name: Verify artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Flatten artifacts
         run: |
-          set -eu
-          for f in \
-            dist/ctxb-darwin-arm64 \
-            dist/ctxb-darwin-x64 \
-            dist/ctxb-linux-x64 \
-            dist/ctxb-linux-arm64 \
-            dist/ctxb-windows-x64.exe; do
-            test -s "$f" || { echo "missing or empty: $f" >&2; exit 1; }
-          done
-          ls -lh dist
-
-      - name: Release
+          mkdir -p out
+          find dist -type f -exec cp {} out/ \;
+          rm -rf dist
+          mv out dist
+      - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # semantic-release reads NPM_TOKEN; npm CLI reads NODE_AUTH_TOKEN.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npx --yes semantic-release

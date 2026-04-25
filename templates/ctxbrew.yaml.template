@@ -1,0 +1,6 @@
+version: 1
+slices:
+  - id: overview
+    description: High-level architecture and usage
+    include:
+      - README.md

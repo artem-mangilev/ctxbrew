@@ -48,3 +48,19 @@ export const captureStdout = async (fn: () => Promise<void>): Promise<string> =>
   }
   return buf;
 };
+
+export const captureStderr = async (fn: () => Promise<void>): Promise<string> => {
+  const original = process.stderr.write.bind(process.stderr);
+  let buf = "";
+  (process.stderr as unknown as { write: (s: unknown) => boolean }).write = (s: unknown) => {
+    buf += typeof s === "string" ? s : new TextDecoder().decode(s as Uint8Array);
+    return true;
+  };
+  try {
+    await fn();
+  } finally {
+    (process.stderr as unknown as { write: (s: unknown) => boolean }).write =
+      original as unknown as (s: unknown) => boolean;
+  }
+  return buf;
+};

@@ -1,15 +1,10 @@
 import { Command } from "commander";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { CURRENT_PROTOCOL_VERSION } from "../core/protocol.ts";
 import { configError } from "../utils/exit.ts";
 import { logger } from "../utils/logger.ts";
-
-const TEMPLATE = {
-  cli: {
-    docs: "./docs/**/*.md",
-    api: ["./src/**/*.ts", "!**/*.test.ts"],
-  },
-};
+import { stringifyYaml } from "../core/yaml.ts";
 
 type Options = {
   cwd?: string;
@@ -32,44 +27,61 @@ const ensureGitignoreEntry = async (cwd: string, entry: string): Promise<void> =
   await Bun.write(target, `${base}${entry}\n`);
 };
 
+const ensureGitattributesEntry = async (cwd: string, entry: string): Promise<void> => {
+  const target = join(cwd, ".gitattributes");
+  let current = "";
+  const file = Bun.file(target);
+  if (await file.exists()) {
+    current = await readFile(target, "utf8");
+    if (current.split(/\r?\n/).map((line) => line.trim()).includes(entry)) return;
+  }
+  const base = current.length > 0 && !current.endsWith("\n") ? `${current}\n` : current;
+  await Bun.write(target, `${base}${entry}\n`);
+};
+
+const INIT_CONFIG_TEMPLATE = stringifyYaml({
+  version: CURRENT_PROTOCOL_VERSION,
+  slices: [
+    {
+      id: "overview",
+      description: "High-level architecture and usage",
+      include: ["README.md"],
+    },
+  ],
+});
+
 export const runInit = async (opts: Options): Promise<void> => {
   const cwd = opts.cwd ?? process.cwd();
-  const target = join(cwd, "package.json");
-  const file = Bun.file(target);
-  if (!(await file.exists())) {
+  const packageJsonPath = join(cwd, "package.json");
+  const packageJsonFile = Bun.file(packageJsonPath);
+  if (!(await packageJsonFile.exists())) {
     throw configError(
-      `package.json not found at ${target}`,
-      "Run `npm init -y` first, then run `ctxb init`.",
+      `package.json not found at ${packageJsonPath}`,
+      "Run `npm init -y` first, then run `ctxbrew init`.",
     );
   }
   let parsed: Record<string, unknown>;
   try {
-    parsed = await file.json();
+    parsed = await packageJsonFile.json();
   } catch (e) {
     throw configError(
-      `Invalid JSON in ${target}: ${(e as Error).message}`,
+      `Invalid JSON in ${packageJsonPath}: ${(e as Error).message}`,
       "Fix package.json and retry.",
     );
   }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw configError(`package.json at ${target} must be a JSON object`);
-  }
-  if ("ctxbrew" in parsed && !opts.force) {
-    throw configError(
-      `package.json already has a ctxbrew field at ${target}`,
-      "Pass --force to overwrite package.json#ctxbrew.",
-    );
+    throw configError(`package.json at ${packageJsonPath} must be a JSON object`);
   }
 
   const currentFiles = (parsed as { files?: unknown }).files;
   let nextFiles: string[] | undefined;
   if (currentFiles === undefined) {
-    nextFiles = [".ctxbrew"];
+    nextFiles = ["dist", "ctxbrew", "AGENTS.md"];
   } else if (Array.isArray(currentFiles) && currentFiles.every((item) => typeof item === "string")) {
-    nextFiles = currentFiles.includes(".ctxbrew") ? currentFiles : [...currentFiles, ".ctxbrew"];
+    nextFiles = [...new Set([...currentFiles, "ctxbrew", "AGENTS.md"])];
   } else {
     throw configError(
-      `package.json field "files" must be an array of strings at ${target}`,
+      `package.json field "files" must be an array of strings at ${packageJsonPath}`,
       'Fix package.json or remove "files" and retry.',
     );
   }
@@ -77,7 +89,7 @@ export const runInit = async (opts: Options): Promise<void> => {
   const scriptsRaw = (parsed as { scripts?: unknown }).scripts;
   let nextScripts: Record<string, string>;
   if (scriptsRaw === undefined) {
-    nextScripts = { prepack: "ctxb build" };
+    nextScripts = { prepack: "ctxbrew build" };
   } else if (
     typeof scriptsRaw === "object" &&
     scriptsRaw !== null &&
@@ -87,35 +99,41 @@ export const runInit = async (opts: Options): Promise<void> => {
     nextScripts = { ...(scriptsRaw as Record<string, string>) };
     const prepack = nextScripts.prepack;
     if (!prepack) {
-      nextScripts.prepack = "ctxb build";
-    } else if (!prepack.includes("ctxb build")) {
+      nextScripts.prepack = "ctxbrew build";
+    } else if (!prepack.includes("ctxbrew build")) {
       if (!opts.force) {
         throw configError(
-          'package.json scripts.prepack exists but does not include "ctxb build"',
-          "Use --force to prepend ctxb build to prepack automatically.",
+          'package.json scripts.prepack exists but does not include "ctxbrew build"',
+          "Use --force to prepend ctxbrew build to prepack automatically.",
         );
       }
-      nextScripts.prepack = `ctxb build && ${prepack}`;
+      nextScripts.prepack = `ctxbrew build && ${prepack}`;
     }
   } else {
     throw configError(
-      `package.json field "scripts" must be an object of string commands at ${target}`,
+      `package.json field "scripts" must be an object of string commands at ${packageJsonPath}`,
     );
   }
 
-  const next = { ...parsed, ctxbrew: TEMPLATE, files: nextFiles, scripts: nextScripts };
-  await Bun.write(target, `${JSON.stringify(next, null, 2)}\n`);
-  await ensureGitignoreEntry(cwd, ".ctxbrew/");
-  logger.success(`updated ${target} with package.json#ctxbrew`);
-  logger.info("Added package.json files/.ctxbrew, scripts.prepack=ctxb build and .gitignore entry.");
+  const next = { ...parsed, files: nextFiles, scripts: nextScripts };
+  await Bun.write(packageJsonPath, `${JSON.stringify(next, null, 2)}\n`);
+  const configPath = join(cwd, "ctxbrew.yaml");
+  const configExists = await Bun.file(configPath).exists();
+  if (!configExists || opts.force) {
+    await Bun.write(configPath, INIT_CONFIG_TEMPLATE);
+  }
+  await ensureGitignoreEntry(cwd, "ctxbrew/");
+  await ensureGitattributesEntry(cwd, "ctxbrew/** linguist-generated=true");
+  logger.success(`updated ${packageJsonPath} and ctxbrew.yaml`);
+  logger.info("Added package files, scripts.prepack, ctxbrew.yaml, .gitignore and .gitattributes entries.");
 };
 
 export const registerInitCommand = (program: Command): void => {
   program
     .command("init")
-    .description("Create/update a starter package.json#ctxbrew in the current directory")
+    .description("Create/update ctxbrew.yaml and publish integration")
     .option("--cwd <dir>", "directory to write into (defaults to current directory)")
-    .option("--force", "overwrite existing package.json#ctxbrew")
+    .option("--force", "overwrite config files when needed")
     .action(async (opts: Options) => {
       await runInit(opts);
     });

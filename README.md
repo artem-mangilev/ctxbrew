@@ -1,176 +1,98 @@
 # ctxbrew
 
-`ctxbrew` packages docs/source into versioned context bundles for AI agents.
-
-Install package `ctxbrew`, run command `ctxb`.
-
-```bash
-ctxb get react components
-```
+`ctxbrew` packages repo context into versioned markdown slices and reads those slices from installed npm dependencies.
 
 ## Install
 
-### From npm (prebuilt binary)
-
 ```bash
 npm install -g ctxbrew
-ctxb --version
+ctxbrew --version
 ```
 
-`ctxbrew` npm package includes a platform-specific prebuilt `ctxb` binary for:
+## Author workflow
 
-- macOS: arm64, x64
-- Linux: arm64, x64
-- Windows: x64
-
-## Quick Start
+Initialize config and publish wiring:
 
 ```bash
-ctxb init
+ctxbrew init
 ```
 
-This adds `ctxbrew` config and npm publish wiring in `package.json`:
+This creates `ctxbrew.yaml`, updates `package.json` (`files`, `scripts.prepack`) and adds generated-artifact markers.
 
-```json
-{
-  "name": "my-library",
-  "version": "0.1.0",
-  "files": ["dist", ".ctxbrew"],
-  "scripts": {
-    "prepack": "ctxb build"
-  },
-  "ctxbrew": {
-    "cli": {
-      "docs": "./docs/**/*.md",
-      "api": ["./src/**/*.ts", "!**/*.test.ts"]
-    }
-  }
-}
-```
-
-Build ctxbrew artifacts (also runs automatically during `npm publish` via `prepack`):
+Build artifacts:
 
 ```bash
-ctxb build
+ctxbrew build
 ```
 
-Install the package and read sections from installed `node_modules`:
+Validate without writing files:
 
 ```bash
-ctxb get my-library
-ctxb get my-library docs
-ctxb get my-library api --json 
-ctxb get my-library docs --files-only
+ctxbrew build --check
 ```
 
-## Config Source
+Generated files:
 
-Config discovery order:
+- `ctxbrew/index.yaml`
+- `ctxbrew/<slice-id>.md`
+- `AGENTS.md`
 
-1. `.ctxbrewrc.json`
-2. `.ctxbrewrc` (JSON content)
-3. `package.json#ctxbrew`
+## Consumer workflow
 
-Example:
+Discover installed packages with context:
 
-```json
-{
-  "name": "react",
-  "version": "19.0.0",
-  "ctxbrew": {
-    "cli": {
-      "components": "./docs/components/**",
-      "directives": "./docs/directives/**",
-      "api": ["./src/**/*.ts", "!**/*.test.ts"]
-    }
-  }
-}
+```bash
+ctxbrew list
+ctxbrew list @acme/ui
 ```
 
-## CLI
+Read one slice:
 
-### `ctxb init [--cwd DIR] [--force]`
-
-Create/update starter `package.json#ctxbrew`, ensure `.ctxbrew` is in package `files`, set `scripts.prepack` to run `ctxb build`, and add `.ctxbrew/` to `.gitignore`.
-
-### `ctxb build [--version SEMVER] [--dry-run] [--cwd DIR]`
-
-Collect files from `ctxbrew.cli` and write package artifacts into `.ctxbrew/` in the project root.
-
-### `ctxb get <name> [section]`
-
-Primary read command.
-
-- Without `section`: list sections from `.ctxbrew/manifest.json`.
-- With `section`: stream section output.
-- Package resolution uses `require.resolve("<name>/package.json")` from current working directory and then reads `<packageDir>/.ctxbrew`.
-
-Flags:
-
-| Flag                | Default   | Effect                                                 |
-| ------------------- | --------- | ------------------------------------------------------ |
-| `--json`            | off       | Structured JSON output                                 |
-| `--files-only`      | off       | Only file paths                                        |
-| `--max-bytes <n>`   | unlimited | Output cap (`200k`, `5m`)                              |
-| `--grep <regex>`    | none      | Filter files by path regex                             |
-
-### `ctxb completion <bash|zsh|fish>`
-
-Print completion script.
-
-## Storage Layout
-
-- Publisher output inside your package root:
-  - `.ctxbrew/manifest.json`
-  - `.ctxbrew/files/<relative-source-path>`
-- Installed package layout in consumer project:
-  - `node_modules/<name>/.ctxbrew/manifest.json`
-  - `node_modules/<name>/.ctxbrew/files/<relative-source-path>`
-
-## npm publish integration
-
-- `ctxb build` prepares `.ctxbrew` locally.
-- npm includes `.ctxbrew` in the package tarball via `package.json#files`.
-- `prepack` runs before `npm pack` and `npm publish`, so `ctxb build` regenerates artifacts automatically.
-
-## Exit Codes
-
-- `0`: success
-- `1`: usage error
-- `2`: config validation error
-- `3`: package metadata/read error
-- `4`: package/section/file not found
-- `5`: reserved
-
-## AI-Agent Usage Snippet
-
-Use this workflow in your agent skill:
-
-1. `ctxb get <name>` to list sections.
-2. `ctxb get <name> <section> --max-bytes 200k` for context.
-3. Use `--json` if structured parsing is needed.
-4. Treat non-zero exit codes as failures (`4` means missing package/section).
-
-## Ecosystem Scope
-
-- JS ecosystem (`package.json`, npm install flow)
-- Go ecosystem
-- Rust ecosystem
-
-## Architecture (High Level)
-
-```text
-publisher project                    npm                              consumer project
------------------                    ---                              ----------------
-ctxb build ---------------------->   npm publish / npm install ----> node_modules/<name>/.ctxbrew/...
-  writes .ctxbrew/manifest.json                                        |
-  writes .ctxbrew/files/*                                              v
-                                                           ctxb get <name> [section]
-                                                           resolve installed package
-                                                           read .ctxbrew manifest/files
-                                                           render markdown/json/files-only -> stdout
+```bash
+ctxbrew get @acme/ui components
 ```
 
-## Contributing
+Search across slices:
 
-Releases are automated via `semantic-release` on every push to `main`. See [CONTRIBUTING.md](CONTRIBUTING.md) for commit conventions and the release pipeline.
+```bash
+ctxbrew search "dialog focus trap"
+ctxbrew search "theming" --limit 5
+```
+
+## Config format (`ctxbrew.yaml`)
+
+```yaml
+version: 1
+slices:
+  - id: overview
+    description: High-level architecture
+    include:
+      - README.md
+  - id: components
+    title: Components
+    description: UI components and usage
+    include:
+      - src/components/**
+      - docs/components/**
+```
+
+Rules:
+
+- `version` is required and currently must be `1`.
+- `id` must be unique kebab-case.
+- `include` is required and non-empty.
+- Overlap policy: first matching slice owns the file.
+
+## Setup for agents
+
+```bash
+ctxbrew setup
+ctxbrew skill --agent cursor
+```
+
+## Exit codes
+
+- `0` success
+- `1` not found
+- `2` validation error
+- `64` usage error

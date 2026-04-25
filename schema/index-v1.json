@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ctxbrew index v1",
+  "type": "object",
+  "required": ["version", "slices"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "slices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "description", "file"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 1 },
+          "file": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

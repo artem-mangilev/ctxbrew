@@ -11,7 +11,7 @@ bun run build                # build all 5 platform binaries into dist/
 bun run build darwin-arm64   # build only one platform
 ```
 
-`bin/ctxb.js` is a thin Node launcher that spawns the correct `dist/ctxb-<platform>-<arch>` binary. The real CLI lives in `src/` and is compiled with `bun build --compile`.
+`bin/ctxbrew.js` is a thin Node launcher that resolves the current `@ctxbrew/<platform>-<arch>` package and runs its `ctxbrew` binary. The real CLI lives in `src/` and is compiled with `bun build --compile`.
 
 ## Commit conventions
 
@@ -30,8 +30,8 @@ Examples:
 
 ```
 feat(publish): support --tag for dist-tags
-fix(get): handle missing .ctxbrew metadata in node_modules package
-docs: clarify prepack integration for ctxb build
+fix(get): handle missing ctxbrew metadata in node_modules package
+docs: clarify prepack integration for ctxbrew build
 ```
 
 Breaking changes:
@@ -44,13 +44,14 @@ BREAKING CHANGE: minimum Node version is now 20.
 
 ## Release flow
 
-Releases are fully automated by `.github/workflows/release.yml` on every push to `main`.
+Releases are automated by `.github/workflows/release.yml` on git tags (`v*`).
 
 Pipeline:
 
 1. `bun install --frozen-lockfile` → `bun run typecheck` → `bun test`
 2. `bun run build` produces all 5 platform binaries in `dist/`.
-3. `npx semantic-release` analyzes commit history, bumps `package.json#version`, updates `CHANGELOG.md`, publishes to npm, creates a GitHub Release with the binaries as assets, and pushes the release commit back to `main`.
+3. `bun run scripts/publish-platforms.ts` publishes per-platform packages.
+4. `npm publish` publishes the main `ctxbrew` package after platform packages.
 
 ### Required GitHub repository setup
 

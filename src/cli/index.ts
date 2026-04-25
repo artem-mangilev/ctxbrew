@@ -1,22 +1,22 @@
 import { Command } from "commander";
 import { registerBuildCommand } from "./build.ts";
-import { registerCompletionCommand } from "./completion.ts";
 import { registerGetCommand } from "./get.ts";
 import { registerInitCommand } from "./init.ts";
+import { registerListCommand } from "./list.ts";
+import { registerSearchCommand } from "./search.ts";
+import { registerSetupCommand } from "./setup.ts";
+import { registerSkillCommand } from "./skill.ts";
 import { CtxbrewError, ExitCode } from "../utils/exit.ts";
 import { logger } from "../utils/logger.ts";
 
 export const buildProgram = (toolVersion: string): Command => {
   const program = new Command();
   program
-    .name("ctxb")
+    .name("ctxbrew")
     .description(
-      "Pack docs/source into versioned context bundles for AI agents.",
+      "Package and read AI context slices from npm dependencies.",
     )
-    // enablePositionalOptions scopes --version to its position: `ctxb --version`
-    // returns the tool version, `ctxb build --version 1.0.0` is the build flag.
-    .enablePositionalOptions(true)
-    .version(toolVersion, "-V, --version", "print ctxb version")
+    .version(toolVersion, "-V, --version", "print ctxbrew version")
     .showHelpAfterError(true)
     .configureOutput({
       writeErr: (s) => process.stderr.write(s),
@@ -24,8 +24,11 @@ export const buildProgram = (toolVersion: string): Command => {
 
   registerInitCommand(program);
   registerBuildCommand(program);
+  registerListCommand(program);
   registerGetCommand(program);
-  registerCompletionCommand(program);
+  registerSearchCommand(program);
+  registerSetupCommand(program);
+  registerSkillCommand(program);
 
   return program;
 };

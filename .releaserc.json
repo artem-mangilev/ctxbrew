@@ -10,6 +10,12 @@
       }
     ],
     [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "CTXBREW_RELEASE_VERSION=${nextRelease.version} bun run scripts/sync-optional-deps.ts && CTXBREW_RELEASE_VERSION=${nextRelease.version} bun run scripts/publish-platforms.ts"
+      }
+    ],
+    [
       "@semantic-release/npm",
       {
         "npmPublish": true,
@@ -20,11 +26,11 @@
       "@semantic-release/github",
       {
         "assets": [
-          { "path": "dist/ctxb-darwin-arm64", "label": "ctxb-darwin-arm64" },
-          { "path": "dist/ctxb-darwin-x64", "label": "ctxb-darwin-x64" },
-          { "path": "dist/ctxb-linux-x64", "label": "ctxb-linux-x64" },
-          { "path": "dist/ctxb-linux-arm64", "label": "ctxb-linux-arm64" },
-          { "path": "dist/ctxb-windows-x64.exe", "label": "ctxb-windows-x64.exe" }
+          { "path": "dist/ctxbrew-darwin-arm64", "label": "ctxbrew-darwin-arm64" },
+          { "path": "dist/ctxbrew-darwin-x64", "label": "ctxbrew-darwin-x64" },
+          { "path": "dist/ctxbrew-linux-x64", "label": "ctxbrew-linux-x64" },
+          { "path": "dist/ctxbrew-linux-arm64", "label": "ctxbrew-linux-arm64" },
+          { "path": "dist/ctxbrew-windows-x64.exe", "label": "ctxbrew-windows-x64.exe" }
         ]
       }
     ],

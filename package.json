@@ -4,10 +4,10 @@
   "description": "CLI for packaging docs/source into versioned context bundles for AI agents.",
   "type": "module",
   "bin": {
-    "ctxb": "./bin/ctxb.js"
+    "ctxbrew": "./bin/ctxbrew.js"
   },
   "scripts": {
-    "dev": "bun run ./src/bin/ctxb.ts",
+    "dev": "bun run ./src/bin/ctxbrew.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "build": "bun run scripts/build.ts"
@@ -17,11 +17,7 @@
     "bun": ">=1.3.6"
   },
   "files": [
-    "bin",
-    "dist",
-    "src",
-    "README.md",
-    "LICENSE"
+    "bin"
   ],
   "keywords": [
     "cli",
@@ -36,14 +32,25 @@
   "publishConfig": {
     "access": "public"
   },
+  "optionalDependencies": {
+    "@ctxbrew/darwin-arm64": "0.1.0",
+    "@ctxbrew/darwin-x64": "0.1.0",
+    "@ctxbrew/linux-x64": "0.1.0",
+    "@ctxbrew/linux-arm64": "0.1.0",
+    "@ctxbrew/win32-x64": "0.1.0"
+  },
   "dependencies": {
+    "@pnpm/lockfile-file": "^9.1.3",
     "commander": "^12.1.0",
+    "fuse.js": "^7.1.0",
     "picocolors": "^1.1.1",
+    "repomix": "^0.3.2",
     "semver": "^7.6.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.6",
     "@semantic-release/npm": "^13.1.5",

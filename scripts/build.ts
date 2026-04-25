@@ -8,14 +8,14 @@ type Target = {
 };
 
 const TARGETS: Target[] = [
-  { bunTarget: "bun-darwin-arm64", outName: "ctxb-darwin-arm64" },
-  { bunTarget: "bun-darwin-x64", outName: "ctxb-darwin-x64" },
-  { bunTarget: "bun-linux-x64", outName: "ctxb-linux-x64" },
-  { bunTarget: "bun-linux-arm64", outName: "ctxb-linux-arm64" },
-  { bunTarget: "bun-windows-x64", outName: "ctxb-windows-x64.exe" },
+  { bunTarget: "bun-darwin-arm64", outName: "ctxbrew-darwin-arm64" },
+  { bunTarget: "bun-darwin-x64", outName: "ctxbrew-darwin-x64" },
+  { bunTarget: "bun-linux-x64", outName: "ctxbrew-linux-x64" },
+  { bunTarget: "bun-linux-arm64", outName: "ctxbrew-linux-arm64" },
+  { bunTarget: "bun-windows-x64", outName: "ctxbrew-windows-x64.exe" },
 ];
 
-const ENTRY = "./src/bin/ctxb.ts";
+const ENTRY = "./src/bin/ctxbrew.ts";
 const OUT_DIR = "dist";
 
 const main = async (): Promise<void> => {
