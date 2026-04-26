@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { mkdir } from "node:fs/promises";
-import { homedir } from "node:os";
+import { constants } from "node:fs";
+import { access, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { renderClaudeSkill } from "../agents/claude.ts";
 import { renderAgentsSkill } from "../agents/agents-md.ts";
@@ -11,22 +11,49 @@ type SetupTarget = {
   content: string;
 };
 
-const setupTargets = (): SetupTarget[] => {
-  const home = homedir();
+type Options = {
+  cwd?: string;
+};
+
+const pathExists = async (path: string): Promise<boolean> => {
+  try {
+    await access(path, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const resolveRepoRoot = async (cwd: string): Promise<string> => {
+  let cursor = cwd;
+  while (true) {
+    if (await pathExists(join(cursor, ".git"))) {
+      return cursor;
+    }
+    const parent = dirname(cursor);
+    if (parent === cursor) {
+      return cwd;
+    }
+    cursor = parent;
+  }
+};
+
+const setupTargets = (root: string): SetupTarget[] => {
   return [
     {
-      path: join(home, ".claude/skills/ctxbrew/SKILL.md"),
+      path: join(root, ".claude/skills/ctxbrew/SKILL.md"),
       content: renderClaudeSkill(),
     },
     {
-      path: join(home, ".agents/skills/ctxbrew/SKILL.md"),
+      path: join(root, ".agents/skills/ctxbrew/SKILL.md"),
       content: renderAgentsSkill(),
     },
   ];
 };
 
-export const runSetup = async (): Promise<void> => {
-  for (const target of setupTargets()) {
+export const runSetup = async (opts: Options = {}): Promise<void> => {
+  const root = await resolveRepoRoot(opts.cwd ?? process.cwd());
+  for (const target of setupTargets(root)) {
     await mkdir(dirname(target.path), { recursive: true });
     await Bun.write(target.path, target.content);
     logger.success(`wrote ${target.path}`);
@@ -37,7 +64,8 @@ export const registerSetupCommand = (program: Command): void => {
   program
     .command("setup")
     .description("Install ctxbrew skills for supported agents")
-    .action(async () => {
-      await runSetup();
+    .option("--cwd <dir>", "directory inside target repository (defaults to current directory)")
+    .action(async (opts: Options) => {
+      await runSetup(opts);
     });
 };

@@ -88,7 +88,7 @@ Rules:
 
 ```bash
 ctxbrew setup
-ctxbrew skill --agent cursor
+ctxbrew skill
 ```
 
 ## Exit codes

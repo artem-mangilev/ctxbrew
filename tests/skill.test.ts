@@ -5,7 +5,7 @@ import { captureStdout } from "./helpers.ts";
 describe("skill", () => {
   test("renders skill markdown", async () => {
     const output = await captureStdout(async () => {
-      await runSkill({ agent: "cursor" });
+      await runSkill();
     });
     expect(output).toContain("ctxbrew list");
     expect(output).toContain("ctxbrew get <package> <slice-id>");
