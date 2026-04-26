@@ -7,6 +7,7 @@ const arch = process.arch;
 const packageName = `@ctxbrew/${platform}-${arch}`;
 const binaryName = platform === "win32" ? "ctxbrew.exe" : "ctxbrew";
 const req = createRequire(import.meta.url);
+const packageVersion = req("../package.json").version;
 
 let binaryPath;
 try {
@@ -17,7 +18,10 @@ try {
   process.exit(1);
 }
 
-const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: "inherit" });
+const result = spawnSync(binaryPath, process.argv.slice(2), {
+  stdio: "inherit",
+  env: { ...process.env, CTXBREW_VERSION: packageVersion },
+});
 if (result.error) {
   console.error(`ctxbrew: failed to run ${binaryPath}: ${result.error.message}`);
   if (result.error.code === "EACCES") {

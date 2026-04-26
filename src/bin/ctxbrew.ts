@@ -3,7 +3,8 @@ import pkg from "../../package.json" with { type: "json" };
 import { runCli } from "../cli/index.ts";
 
 const main = async (): Promise<void> => {
-  const code = await runCli(pkg.version, process.argv.slice(2));
+  const toolVersion = process.env.CTXBREW_VERSION ?? pkg.version;
+  const code = await runCli(toolVersion, process.argv.slice(2));
   process.exit(code);
 };
 

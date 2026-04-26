@@ -17,7 +17,7 @@ Initialize config and publish wiring:
 ctxbrew init
 ```
 
-This creates `ctxbrew.yaml`, updates `package.json` (`files`, `scripts.prepack`) and adds generated-artifact markers.
+This creates `ctxbrew.yaml`.
 
 Build artifacts:
 
