@@ -22,6 +22,21 @@ It helps:
 - ⚡ **Fast local access**: extract context from local package files with no network calls.
 - 🪄 **Token efficiency**: split context into focused slices and compress supported sources into top-level signatures.
 
+## 🗺️ Roadmap
+
+- [x] JavaScript ecosystem support
+- [ ] Python and pip support
+- [ ] Go modules support
+- [ ] Rust and Cargo support
+- [ ] Java and Gradle support
+- [ ] C# and NuGet support
+- [ ] PHP and Composer support
+- [ ] Ruby and RubyGems support
+- [ ] Dart and pub.dev support
+- [ ] Homebrew support
+- [ ] Community context registry for packages without first-party support
+- [ ] Website
+
 ## 🚀 Quick Start
 
 ### 🧑‍🍳 Library Author Workflow
